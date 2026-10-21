@@ -21,6 +21,17 @@
   if (d.verloopt && new Date(d.verloopt + 'T23:59:59') < new Date()) {
     return melding('Deze websitecheck is verlopen', d.verlopen_tekst || 'Vraag gerust een nieuwe websitecheck aan.');
   }
+  // offline gehaald vanuit het overzicht? Dan staat de vingerafdruk van deze pagina (d.intrek, SHA-256) op de intreklijst. Is die lijst
+  // even niet bereikbaar, dan opent de pagina gewoon; een ingetrokken pagina wordt daarna ook nog helemaal verwijderd.
+  if (/^[0-9a-f]{64}$/.test(d.intrek || '')) {
+    try {
+      var stop = new AbortController(), klok = setTimeout(function () { stop.abort(); }, 4000);
+      var st = await (await fetch('https://www.go4itstudio.com/websitecheck-intrek.php?h=' + d.intrek,
+        { cache: 'no-store', referrerPolicy: 'no-referrer', signal: stop.signal })).json();
+      clearTimeout(klok);
+      if (st.offline === true) return melding('Deze link werkt niet (meer)', 'Vraag gerust een nieuwe websitecheck aan.');
+    } catch (e) {}
+  }
   var sleutel = location.hash.slice(1);
   if (!sleutel) return melding('Deze link is niet compleet', 'Open de link precies zoals je hem kreeg, met alles na het #-teken.');
   try {

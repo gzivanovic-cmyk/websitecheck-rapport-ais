@@ -4,14 +4,165 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
+<meta name="color-scheme" content="light">
 <title>Website-check · AIS-Groep</title>
-<style>body { font-family: system-ui, -apple-system, sans-serif; color: #1C2340; background: #fff; } main { max-width: 560px; margin: 14vh auto; padding: 0 16px; line-height: 1.55; } a { color: #0D074F; }</style>
+<meta name="description" content="Gratis website-check van AIS-Groep: drie heldere cijfers en een persoonlijk verbeterplan voor uw website.">
+<link rel="icon" href="/assets/ais-logo.png" type="image/png">
+<link rel="preload" href="/assets/onest-latin.woff2" as="font" type="font/woff2" crossorigin>
+<!-- Aanvraagknoppen wijzen nu naar de contactpagina van de huidige site. Staat de nieuwe AIS-site live, verander dan alle
+     links met class="aanvraag" naar https://www.ais-groep.nl/website-laten-maken/?check#contact-website (opent het formulier met de check gekozen). -->
+<style>
+@font-face { font-family: 'Onest'; src: url(/assets/onest-latin.woff2) format('woff2'); font-weight: 400 800; font-display: swap; }
+@font-face { font-family: 'Instrument Serif'; src: url(/assets/instrument-serif-italic-latin.woff2) format('woff2'); font-style: italic; font-weight: 400; font-display: swap; }
+:root { --navy: #0d074f; --navy-2: #17106a; --ink: #15123a; --ink-2: #3d3a5c; --muted: #6b6889; --line: #e3e1e9; --papier: #f5f6fa;
+  --goud: #c9a227; --goud-licht: #e6c85a; --goud-tekst: #8a6800; --goud-zacht: #f8f0da; --goed: #1e9e4a; --beter: #c98a00; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { -webkit-text-size-adjust: 100%; }
+body { font-family: 'Onest', system-ui, -apple-system, sans-serif; color: var(--ink); background: #fff; line-height: 1.6; font-size: 17px; -webkit-font-smoothing: antialiased; }
+a { color: var(--navy); }
+.wrap { max-width: 1080px; margin: 0 auto; padding: 0 20px; }
+header { position: sticky; top: 0; z-index: 5; background: rgba(255,255,255,.9); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
+header .wrap { display: flex; align-items: center; justify-content: space-between; height: 72px; gap: 12px; }
+header img { height: 48px; width: auto; display: block; }
+.btn { display: inline-flex; align-items: center; gap: 8px; border-radius: 999px; padding: 14px 24px; font-weight: 650; font-size: 15.5px; text-decoration: none; transition: transform .2s ease, box-shadow .2s ease, background .2s ease; }
+.btn:hover { transform: translateY(-1px); }
+.btn-navy { background: var(--navy); color: #fff; box-shadow: 0 8px 22px -10px rgba(13,7,79,.55); }
+.btn-licht { background: #fff; color: var(--navy); border: 1px solid var(--line); }
+.btn-goud { background: var(--goud-licht); color: var(--navy); }
+header .btn { padding: 10px 17px; font-size: 14px; white-space: nowrap; }
+.hero { padding: clamp(56px, 9vw, 104px) 0 clamp(44px, 6vw, 72px); background: radial-gradient(900px 480px at 88% -90px, #e7e9f8, transparent 70%), radial-gradient(600px 300px at 0% 110%, #fbf4dc, transparent 70%); }
+.tag { display: inline-flex; align-items: center; gap: 10px; font-size: 12.5px; font-weight: 650; letter-spacing: .16em; text-transform: uppercase; color: var(--goud-tekst); margin-bottom: 16px; }
+.tag::before { content: ""; width: 26px; height: 2px; background: var(--goud); }
+h1 { font-size: clamp(38px, 6.2vw, 64px); line-height: 1.04; letter-spacing: -.035em; max-width: 14ch; font-weight: 750; color: var(--navy); }
+h1 em { font-family: 'Instrument Serif', Georgia, serif; font-style: italic; font-weight: 400; letter-spacing: -.01em; color: var(--goud-tekst); }
+.lead { font-size: clamp(17px, 2vw, 20px); color: var(--ink-2); max-width: 46ch; margin: 22px 0 30px; }
+.acties { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+.link-noot { margin-top: 24px; display: inline-flex; gap: 10px; align-items: flex-start; background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 11px 15px; font-size: 14.5px; color: var(--ink-2); max-width: 560px; }
+.link-noot svg { flex: none; width: 18px; height: 18px; margin-top: 2px; color: var(--goud-tekst); }
+section { padding: clamp(52px, 7vw, 92px) 0; }
+h2 { font-size: clamp(28px, 4vw, 40px); letter-spacing: -.03em; line-height: 1.12; margin-bottom: 14px; color: var(--navy); font-weight: 720; }
+.sub { color: var(--ink-2); max-width: 56ch; margin-bottom: 32px; }
+.drie { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.cijfer { border: 1px solid var(--line); border-radius: 20px; padding: 26px; background: #fff; }
+.cijfer svg { width: 64px; height: 64px; display: block; margin-bottom: 16px; }
+.cijfer h3 { font-size: 19px; letter-spacing: -.01em; margin-bottom: 6px; color: var(--navy); }
+.cijfer p { color: var(--ink-2); font-size: 15.5px; }
+.papier { background: var(--papier); }
+.krijg { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 24px; list-style: none; }
+.krijg li { display: flex; gap: 14px; align-items: flex-start; background: #fff; border-radius: 16px; padding: 18px 20px; border: 1px solid var(--line); }
+.krijg li b { display: block; color: var(--navy); }
+.krijg li span { color: var(--ink-2); font-size: 15.5px; }
+.vink { flex: none; width: 26px; height: 26px; border-radius: 50%; background: var(--goud-zacht); color: var(--goud-tekst); display: grid; place-items: center; margin-top: 1px; }
+.vink svg { width: 14px; height: 14px; }
+.stappen { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+.stap { border-top: 2px solid var(--navy); padding-top: 18px; }
+.stap small { display: block; font-size: 12.5px; font-weight: 650; letter-spacing: .12em; color: var(--goud-tekst); text-transform: uppercase; margin-bottom: 6px; }
+.stap h3 { font-size: 19px; margin-bottom: 6px; color: var(--navy); }
+.stap p { color: var(--ink-2); font-size: 15.5px; }
+.daarna { margin-top: clamp(36px, 5vw, 56px); display: flex; gap: 18px; align-items: flex-start; padding: 22px 24px; border-radius: 18px; background: var(--goud-zacht); color: var(--ink-2); font-size: 16px; }
+.daarna b { color: var(--navy); }
+.daarna svg { flex: none; width: 24px; height: 24px; color: var(--goud-tekst); margin-top: 2px; }
+.slot { display: flex; gap: 26px; align-items: center; justify-content: space-between; background: radial-gradient(500px 260px at 100% 0%, rgba(230,200,90,.18), transparent 70%), linear-gradient(155deg, var(--navy-2), var(--navy) 60%, #0a053f); color: #fff; border-radius: 26px; padding: clamp(28px, 4.5vw, 52px); }
+.slot h2 { color: #fff; font-size: clamp(26px, 3.4vw, 36px); margin-bottom: 10px; }
+.slot p { color: #cfcbef; max-width: 52ch; }
+.slot .acties { flex: none; }
+.slot a.tel { color: #fff; font-weight: 600; text-decoration: none; border-bottom: 1px solid rgba(255,255,255,.4); }
+footer { border-top: 1px solid var(--line); padding: 26px 0 40px; font-size: 13.5px; color: var(--muted); }
+footer .wrap { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+footer a { color: var(--muted); }
+@media (max-width: 860px) {
+  .slot { flex-direction: column; align-items: flex-start; }
+}
+@media (max-width: 760px) {
+  body { font-size: 16px; }
+  .drie, .stappen, .krijg { grid-template-columns: 1fr; }
+  header .wrap { height: 64px; }
+  header img { height: 40px; }
+  header .btn span { display: none; }
+  header .btn { padding: 9px 14px; font-size: 13.5px; }
+  .daarna { flex-direction: column; gap: 10px; }
+}
+@media (prefers-reduced-motion: reduce) { .btn { transition: none; } .btn:hover { transform: none; } }
+</style>
 </head>
 <body>
+<header><div class="wrap">
+  <a href="https://www.ais-groep.nl/"><img src="/assets/ais-logo.png" alt="AIS-Groep" width="283" height="283"></a>
+  <a class="btn btn-navy aanvraag" href="https://www.ais-groep.nl/contact">Gratis check<span> aanvragen</span> →</a>
+</div></header>
+
 <main>
-<h1 style="font-size:24px;margin:0 0 8px">Persoonlijke website-checks</h1>
-<p>Hier staan de website-checks van AIS-Groep. Elke check heeft een eigen, persoonlijke link. Heeft u er een ontvangen? Open dan precies die link.</p>
-<p>Een website-check aanvragen kan via <a href="https://www.ais-groep.nl/contact">ais-groep.nl</a>.</p>
+  <div class="hero"><div class="wrap">
+    <span class="tag">Website-check</span>
+    <h1>Hoe goed werkt uw website <em>echt</em>?</h1>
+    <p class="lead">Wij bekijken uw site zoals een klant dat doet: op de computer én op de telefoon. U krijgt drie heldere cijfers en een persoonlijk verbeterplan, in gewone taal. Gratis en vrijblijvend.</p>
+    <div class="acties">
+      <a class="btn btn-navy aanvraag" href="https://www.ais-groep.nl/contact">Vraag de gratis check aan →</a>
+      <a class="btn btn-licht" href="tel:+31881700602">Bel 088 1700 602</a>
+    </div>
+    <p class="link-noot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><span>Heeft u al een link van ons gekregen? Open die precies zoals u hem kreeg. Alleen met die link ziet u uw eigen check.</span></p>
+  </div></div>
+
+  <section><div class="wrap">
+    <h2>Drie cijfers die laten zien waar u staat</h2>
+    <p class="sub">Geen lange lijst met vaktermen, maar drie cijfers van 1 tot 10. Bij elk cijfer ziet u wat goed gaat en wat beter kan.</p>
+    <div class="drie">
+      <div class="cijfer">
+        <svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="26" fill="#eceef7" stroke="#e9e8f0" stroke-width="7"/><circle cx="32" cy="32" r="26" fill="none" stroke="#0d074f" stroke-width="7" stroke-linecap="round" stroke-dasharray="122 164" transform="rotate(-90 32 32)"/></svg>
+        <h3>Commerciële kracht</h3>
+        <p>Helpt uw site bezoekers naar een aanvraag of een bezoek aan uw winkel? Uitstraling, uw boodschap, vertrouwen en hoe makkelijk iemand contact opneemt.</p>
+      </div>
+      <div class="cijfer">
+        <svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="26" fill="#e3f4e9" stroke="#e9e8f0" stroke-width="7"/><circle cx="32" cy="32" r="26" fill="none" stroke="#1e9e4a" stroke-width="7" stroke-linecap="round" stroke-dasharray="145 164" transform="rotate(-90 32 32)"/></svg>
+        <h3>Technische gezondheid</h3>
+        <p>Is uw site snel, veilig en goed te gebruiken op de telefoon? Gemeten, onder meer met Google PageSpeed.</p>
+      </div>
+      <div class="cijfer">
+        <svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="26" fill="#f8f0da" stroke="#e9e8f0" stroke-width="7"/><circle cx="32" cy="32" r="26" fill="none" stroke="#c9a227" stroke-width="7" stroke-linecap="round" stroke-dasharray="104 164" transform="rotate(-90 32 32)"/></svg>
+        <h3>Vindbaar in Google</h3>
+        <p>Kan Google uw site goed lezen en begrijpen? Titels, koppen, opbouw, uw bedrijfsgegevens en of klanten uit uw regio u vinden.</p>
+      </div>
+    </div>
+  </div></section>
+
+  <section class="papier"><div class="wrap">
+    <h2>Wat u krijgt</h2>
+    <p class="sub">Een eigen, persoonlijke pagina met alles over uw site. Prettig te lezen op uw telefoon, en ook als PDF te downloaden.</p>
+    <ul class="krijg">
+      <li><span class="vink"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span><div><b>De punten die wij als eerste zouden aanpakken</b><span>Zodat u weet waar u het meest mee wint.</span></div></li>
+      <li><span class="vink"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span><div><b>Een verbeterplan in gewone taal</b><span>Per punt wat wij zagen, waarom het telt en wat u kunt doen.</span></div></li>
+      <li><span class="vink"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span><div><b>Uw Google-bedrijfsprofiel erbij</b><span>Sterren, reviews en of uw profiel goed aansluit op uw site.</span></div></li>
+      <li><span class="vink"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span><div><b>Noemen AI-assistenten uw bedrijf?</b><span>Een momentopname: wordt u genoemd door ChatGPT of Gemini als iemand een zaak zoals de uwe zoekt?</span></div></li>
+    </ul>
+  </div></section>
+
+  <section><div class="wrap">
+    <h2>Zo werkt het</h2>
+    <div class="stappen">
+      <div class="stap"><small>Stap 1</small><h3>U vraagt hem aan</h3><p>Laat ons weten om welke website het gaat. Meer is niet nodig.</p></div>
+      <div class="stap"><small>Stap 2</small><h3>Wij bekijken uw site</h3><p>Tot tien pagina's, op de computer en op de telefoon. Elke check wordt door een mens nagelezen voordat u hem krijgt.</p></div>
+      <div class="stap"><small>Stap 3</small><h3>U krijgt uw link</h3><p>Binnen één werkdag hoort u van ons, met de link naar uw persoonlijke check.</p></div>
+    </div>
+    <p class="daarna"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg><span><b>En daarna?</b> U bepaalt zelf wat u met het advies doet: zelf aanpassen, laten doen door wie uw site nu bijhoudt, of door ons. AIS maakt ook websites, eenmalig vanaf € 999.</span></p>
+  </div></section>
+
+  <section style="padding-top:0"><div class="wrap">
+    <div class="slot">
+      <div>
+        <h2>Benieuwd hoe uw site ervoor staat?</h2>
+        <p>AIS-Groep in Hoorn: vaste mensen, geen callcenter. Een website-check is gratis en vrijblijvend.</p>
+      </div>
+      <div class="acties">
+        <a class="btn btn-goud aanvraag" href="https://www.ais-groep.nl/contact">Vraag de gratis check aan →</a>
+        <a class="tel" href="tel:+31881700602">088 1700 602</a>
+      </div>
+    </div>
+  </div></section>
 </main>
+
+<footer><div class="wrap">
+  <span>AIS-Groep · AIS Retail B.V. · Hoorn · KvK 81161239 · 088 1700 602 · <a href="https://www.ais-groep.nl/">ais-groep.nl</a></span>
+  <span>Uw persoonlijke check is alleen te openen met uw eigen link.</span>
+</div></footer>
 </body>
 </html>
