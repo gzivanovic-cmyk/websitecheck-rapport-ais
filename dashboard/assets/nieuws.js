@@ -341,11 +341,10 @@ window.AISNieuws = (function () {
       li.addEventListener('pointerdown', function (e) {
         if (e.button !== 0 || e.target.closest('.np-pijl') || (e.pointerType === 'touch' && !e.target.closest('.np-greep'))) return;
         var start = e.clientY, voor = volgorde().join(), bewogen = false;
-        try { li.setPointerCapture(e.pointerId); } catch (x) {}
         var beweeg = function (ev) {
           if (ev.pointerId !== e.pointerId) return;
           if (!bewogen && Math.abs(ev.clientY - start) < 6) return;
-          if (!bewogen) { bewogen = true; li.classList.add('sleept'); lijst.classList.add('bezig'); }
+          if (!bewogen) { bewogen = true; li.classList.add('sleept'); lijst.classList.add('bezig'); try { li.setPointerCapture(e.pointerId); } catch (x) {} }   // pas nu vastpakken: een gewone klik moet het bericht blijven openen
           ev.preventDefault();
           // bij een snelle beweging meerdere plekken tegelijk opschuiven
           for (var n = 0; n < 50; n++) {
