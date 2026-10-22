@@ -179,3 +179,4 @@
   .n-plan .nk { padding: 10px 12px; }
 }
 @media (prefers-reduced-motion: reduce) { .np.net .nk { animation: none; } }
+.ne-maat { display: block; margin-top: 4px; font-size: 11px; font-weight: 600; color: var(--navy); opacity: .7; }

@@ -11,6 +11,7 @@ window.AISNieuws = (function () {
   var TZ = 'Europe/Amsterdam';
   var RUBRIEKEN = ['Tips voor de speciaalzaak', 'Promesse', 'Leveranciers en prijzen', 'Klantverhalen', 'Websites', 'Nieuws'];
   var VASTE_ADRESSEN = ['ais-maakt-nu-ook-websites', 'software-op-maat-zonder-gedoe', 'ketenintegratie', 'veel-verschillende-leveranciers'];
+  var FOTOMAAT = 'Liggend, minimaal 1600 × 1000 pixels';   // komt terug als 4:3 (artikel), 16:10 (kaartje) en 1200 × 630 (delen)
   var GRENS = 70;   // SEO-score: daaronder vraagt het dashboard of je echt wilt publiceren
   var ctx = null, opslag = null, berichten = [], filter = 'alle', zoek = '', geladen = false, laden = null;
   var $ = function (id) { return document.getElementById(id); };
@@ -478,7 +479,7 @@ window.AISNieuws = (function () {
           '<div class="ne-veld"><label for="ne-samenvatting">Korte samenvatting ' + teller('t-sam', 180) + '</label><textarea id="ne-samenvatting" data-v="samenvatting" rows="2" placeholder="Eén of twee zinnen: wat heeft de lezer eraan? Staat op het kaartje bij Nieuws.">' + esc(b.samenvatting) + '</textarea></div>' +
           '<div class="ne-twee"><div class="ne-veld"><label for="ne-rubriek">Rubriek</label><select id="ne-rubriek" data-v="rubriek">' + opties + '</select></div>' +
           '<div class="ne-veld"><label for="ne-auteur">Schrijver</label><input id="ne-auteur" data-v="auteur" value="' + esc(b.auteur) + '" list="ne-auteurs"><datalist id="ne-auteurs"><option value="AIS-Groep"><option value="Achmed Afkiri"></datalist></div></div>' +
-          '<div class="ne-veld"><span class="ne-label">Omslagfoto <small>liggend werkt het best</small></span><div class="ne-beeld"><div class="ne-beeld-vb" id="ne-beeldvb">Nog geen foto</div><div>' +
+          '<div class="ne-veld"><span class="ne-label">Omslagfoto <small>' + FOTOMAAT.toLowerCase() + ', onderwerp in het midden</small></span><div class="ne-beeld"><div class="ne-beeld-vb" id="ne-beeldvb">' + leegVak('Nog geen foto') + '</div><div>' +
             '<div class="ne-beeld-knoppen"><label class="knop licht" style="cursor:pointer">Foto kiezen<input type="file" id="ne-bestand" accept="image/*" hidden></label>' + (b.beeld ? '<button class="knop licht" type="button" id="ne-geenbeeld">Weghalen</button>' : '') + '</div>' +
             '<input id="ne-alt" data-v="beeldAlt" value="' + esc(b.beeldAlt) + '" placeholder="Wat staat er op de foto? (voor Google en schermlezers)" aria-label="Beschrijving van de foto"></div></div></div>' +
           '<div class="ne-veld"><span class="ne-label">In het kort <small>optioneel, max. 3 punten bovenaan het artikel</small></span><div class="ne-kort">' +
@@ -705,16 +706,19 @@ window.AISNieuws = (function () {
       bestandSha[pad] = await opslag.schrijf(pad, b64, null, 'Foto: ' + (ed.b.titel || pad));
       beeldUrl[pad] = c.toDataURL('image/jpeg', 0.84);
       ed.b.beeld = pad;
-      if (!ed.b.beeldAlt) ctx.toast('Foto toegevoegd. Beschrijf er nog kort bij wat erop staat.');
+      var klein = img.naturalWidth < 1200 || img.naturalHeight < 750, staand = img.naturalHeight > img.naturalWidth;
+      if (klein || staand) ctx.toast('Foto toegevoegd, maar ' + (staand ? 'hij staat rechtop: op de site wordt boven en onder veel weggesneden' : 'hij is klein (' + img.naturalWidth + ' × ' + img.naturalHeight + ') en kan wazig worden') + '. Het best: ' + FOTOMAAT.toLowerCase() + '.');
+      else if (!ed.b.beeldAlt) ctx.toast('Foto toegevoegd. Beschrijf er nog kort bij wat erop staat.');
       tekenEditor();
     } catch (e) { $('ne-beeldvb').textContent = 'Uploaden lukte niet'; fout(e); }
   }
+  function leegVak(tekst) { return '<span>' + esc(tekst) + '<small class="ne-maat">' + esc(FOTOMAAT) + '</small></span>'; }
   function laadPlaatje(src) { return new Promise(function (ok, mis) { var i = new Image(); i.onload = function () { ok(i); }; i.onerror = mis; i.src = src; }); }
   function toonBeeld() {
     var vb = $('ne-beeldvb'); if (!vb) return;
-    if (!ed.b.beeld) { vb.textContent = 'Nog geen foto'; vb.style.backgroundImage = ''; return; }
+    if (!ed.b.beeld) { vb.innerHTML = leegVak('Nog geen foto'); vb.style.backgroundImage = ''; return; }
     vb.textContent = 'Laden…';
-    beeld(ed.b.beeld).then(function (u) { if (!$('ne-beeldvb')) return; if (u) { vb.style.backgroundImage = 'url(' + u + ')'; vb.textContent = ''; } else vb.textContent = 'Foto niet gevonden. Kies hem opnieuw.'; tekenDeel($('ne-deel')).catch(function () {}); }).catch(function () { vb.textContent = 'Foto niet gevonden. Kies hem opnieuw.'; });
+    beeld(ed.b.beeld).then(function (u) { if (!$('ne-beeldvb')) return; if (u) { vb.style.backgroundImage = 'url(' + u + ')'; vb.textContent = ''; } else vb.innerHTML = leegVak('Foto niet gevonden. Kies hem opnieuw.'); tekenDeel($('ne-deel')).catch(function () {}); }).catch(function () { vb.innerHTML = leegVak('Foto niet gevonden. Kies hem opnieuw.'); });
   }
 
   // ---- deelafbeelding (1200 × 630) --------------------------------------------------------------------------------
