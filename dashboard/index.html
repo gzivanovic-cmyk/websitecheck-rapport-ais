@@ -16,8 +16,10 @@
 <meta name="apple-mobile-web-app-title" content="AIS Dashboard">
 <meta name="theme-color" content="#FFFFFF">
 <link rel="preload" href="assets/onest-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="assets/nieuws.css">
 <style>
-/* AIS-dashboard: alleen voor Goran. A = website-check-aanvragen (versleuteld, van de bot), B = aanvragen per maand.
+/* AIS-dashboard: alleen voor Goran. A = website-check-aanvragen (versleuteld, van de bot), B = aanvragen per maand,
+   C = nieuwsberichten voor ais-groep.nl (assets/nieuws.js en nieuws.css, opslag in de privé-repo ais-nieuws).
    Zelfde werking als het overzicht van de websitechecks, maar alleen AIS en in de AIS-huisstijl. De gegevens worden in de browser ontsleuteld met het wachtwoord. */
 @font-face { font-family: 'Onest'; src: url(assets/onest-latin.woff2) format('woff2'); font-weight: 400 800; font-display: swap; }
 @font-face { font-family: 'Instrument Serif'; src: url(assets/instrument-serif-italic-latin.woff2) format('woff2'); font-style: italic; font-display: swap; }
@@ -157,7 +159,7 @@ details.tabel td.n, details.tabel th.n { text-align: right; font-variant-numeric
 <div id="login"><form class="lbox" id="lform">
   <img src="assets/ais-logo.png" alt="AIS-Groep" width="64" height="64">
   <h1>AIS <em>Dashboard</em></h1>
-  <p>Website-checks en aanvragen per maand. Alleen voor Goran.</p>
+  <p>Website-checks, aanvragen per maand en nieuwsberichten. Alleen voor Goran.</p>
   <label class="verborgen" for="pw">Wachtwoord</label>
   <input id="pw" type="password" autocomplete="current-password" placeholder="Wachtwoord" required>
   <label class="onthoud"><input type="checkbox" id="onthoud"> Ingelogd blijven op dit toestel</label>
@@ -171,7 +173,7 @@ details.tabel td.n, details.tabel th.n { text-align: right; font-variant-numeric
     <div class="hin"><img src="assets/ais-logo.png" alt="AIS-Groep" width="38" height="38"><h1>Dashboard</h1><span class="upd" id="upd"></span>
       <button class="ib" id="meld" type="button" hidden>Meldingen aanzetten</button>
       <button class="ib" id="uit" aria-label="Uitloggen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg><span class="mt"> Uitloggen</span></button></div>
-    <nav class="tabs" id="tabs" aria-label="Onderdelen"><button data-tab="aanvragen" class="aan">Website-checks</button><button data-tab="maand">Per maand</button></nav>
+    <nav class="tabs" id="tabs" aria-label="Onderdelen"><button data-tab="aanvragen" class="aan">Website-checks</button><button data-tab="maand">Per maand</button><button data-tab="nieuws">Nieuws</button></nav>
   </header>
   <main>
     <div class="testbalk verborgen" id="testbalk">Lokale test met <b>testgegevens</b> (echte checks van deze Mac, niet van de bot). Meldingen en de knoppen offline halen, opnieuw checken en verwijderen staan uit tot de echte AIS-gegevens er zijn.</div>
@@ -192,10 +194,14 @@ details.tabel td.n, details.tabel th.n { text-align: right; font-variant-numeric
       <div class="grafiek" id="mgrafiek"></div>
     </section>
 
+    <section id="t-nieuws" class="verborgen"><div id="nieuws"></div></section>
+
   </main>
 </div>
 
 <div id="detail" class="verborgen" role="dialog" aria-modal="true"><div class="paneel" id="paneel"></div></div>
+
+<script src="assets/nieuws.js"></script>
 
 <script>
 (function () {
@@ -603,8 +609,9 @@ details.tabel td.n, details.tabel th.n { text-align: right; font-variant-numeric
   function kiesTab(t) {
     tab = t;
     $('tabs').querySelectorAll('button').forEach(function (b) { b.classList.toggle('aan', b.dataset.tab === t); });
-    ['aanvragen', 'maand'].forEach(function (n) { $('t-' + n).classList.toggle('verborgen', n !== t); });
+    ['aanvragen', 'maand', 'nieuws'].forEach(function (n) { $('t-' + n).classList.toggle('verborgen', n !== t); });
     if (t === 'maand') toonMaand();
+    if (t === 'nieuws' && window.AISNieuws) AISNieuws.toon({ pw: function () { return sleutelPw; }, toast: toast, bevestig: bevestig, lokaal: CONFIG.test });
     try { sessionStorage.setItem('ais-dashboard-tab', t); } catch (e) {}
   }
   $('tabs').addEventListener('click', function (e) { var b = e.target.closest('button[data-tab]'); if (b) kiesTab(b.dataset.tab); });
@@ -722,7 +729,7 @@ details.tabel td.n, details.tabel th.n { text-align: right; font-variant-numeric
     $('testbalk').classList.toggle('verborgen', !(CONFIG.test || lijst.test));
     $('login').classList.add('verborgen'); $('app').classList.remove('verborgen'); $('pw').value = ''; $('lfout').textContent = '';
     var bewaard = null; try { bewaard = sessionStorage.getItem('ais-dashboard-tab'); } catch (e) {}
-    kiesTab(bewaard === 'maand' ? 'maand' : 'aanvragen'); meldStatus(); openUitMelding();
+    kiesTab(bewaard === 'maand' || bewaard === 'nieuws' ? bewaard : 'aanvragen'); meldStatus(); openUitMelding();
   }
   $('onthoud').checked = losseApp;
   $('lform').addEventListener('submit', async function (e) {
@@ -738,7 +745,7 @@ details.tabel td.n, details.tabel th.n { text-align: right; font-variant-numeric
       return inloggen(pw).catch(function (err) { $('lfout').textContent = ''; if (err && err.name === 'OperationError') vergeet(); });
     }).catch(function () { vergeet(); });
   }
-  $('uit').onclick = function () { vergeet(); sleutelPw = null; data = []; $('app').classList.add('verborgen'); $('login').classList.remove('verborgen'); $('lijst').innerHTML = ''; $('lfout').textContent = ''; };
+  $('uit').onclick = function () { if (window.AISNieuws) AISNieuws.uit(); vergeet(); sleutelPw = null; data = []; $('app').classList.add('verborgen'); $('login').classList.remove('verborgen'); $('lijst').innerHTML = ''; $('lfout').textContent = ''; };
   $('q').addEventListener('input', toonLijst);
   $('fstat').addEventListener('click', function (e) { var b = e.target.closest('button'); if (!b) return; fstat = b.dataset.v; this.querySelectorAll('button').forEach(function (x) { x.classList.toggle('aan', x === b); }); toonLijst(); });
 
