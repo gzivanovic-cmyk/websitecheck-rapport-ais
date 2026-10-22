@@ -395,11 +395,12 @@ window.AISNieuws = (function () {
   // ---- koppelen met GitHub ----------------------------------------------------------------------------------------
   function koppelScherm(doos) {
     var url = 'https://github.com/settings/personal-access-tokens/new?name=' + encodeURIComponent('AIS-dashboard nieuws') +
-      '&description=' + encodeURIComponent('Nieuwsberichten schrijven vanuit het AIS-dashboard') + '&target_name=gzivanovic-cmyk&expires_in=366&contents=write';
+      '&description=' + encodeURIComponent('Nieuwsberichten schrijven vanuit het AIS-dashboard') + '&target_name=gzivanovic-cmyk&expires_in=365&contents=write';
     doos.innerHTML = '<h2 class="kop2">Nieuws<em>berichten</em></h2><p class="sub">Schrijf, plan en beheer de berichten voor ais-groep.nl/nieuws. Ze worden bewaard in je privé-opslag <b>ais-nieuws</b> op GitHub, met elke versie erbij.</p>' +
       '<div class="n-koppel"><h3>Eenmalig koppelen (per toestel)</h3><p class="ne-hint">Het dashboard heeft een sleutel nodig die alleen bij de opslag ais-nieuws kan. Die maak je zelf aan; ik zie hem nooit.</p><ol>' +
       '<li><a href="' + url + '" target="_blank" rel="noopener"><b>Open GitHub: nieuwe sleutel maken</b></a> (log in als gzivanovic-cmyk).</li>' +
-      '<li>Bij <b>Repository access</b>: kies <b>Only select repositories</b> en dan <code>ais-nieuws</code>.</li>' +
+      '<li>Bij <b>Expiration</b>: kies de langste termijn (365 dagen). Daarna maak je een nieuwe sleutel.</li>' +
+      '<li>Bij <b>Repository access</b>: kies <b>Only select repositories</b> en dan alleen <code>ais-nieuws</code>. Niet <i>All repositories</i>.</li>' +
       '<li>Bij <b>Permissions → Repository permissions</b>: zet <b>Contents</b> op <b>Read and write</b>. De rest laat je zoals het is.</li>' +
       '<li>Klik op <b>Generate token</b>, kopieer de code (begint met <code>github_pat_</code>) en plak hem hieronder.</li></ol>' +
       '<div class="rij2"><input id="n-token" type="password" autocomplete="off" placeholder="github_pat_…" aria-label="GitHub-sleutel"><button class="knop" type="button" id="n-koppel">Koppelen</button></div>' +
