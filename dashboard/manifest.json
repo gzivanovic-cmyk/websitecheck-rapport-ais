@@ -1,0 +1,15 @@
+{
+  "name": "AIS Dashboard",
+  "short_name": "AIS Dashboard",
+  "description": "Gorans dashboard voor AIS: website-checks via ais-groep.nl, aanvragen per maand en Search Console.",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#FFFFFF",
+  "theme_color": "#0d074f",
+  "icons": [
+    { "src": "assets/icoon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "assets/icoon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

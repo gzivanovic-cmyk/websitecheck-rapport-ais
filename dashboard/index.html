@@ -1,0 +1,868 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow,noarchive">
+<meta name="referrer" content="no-referrer">
+<meta name="color-scheme" content="light">
+<title>Dashboard · AIS-Groep</title>
+<link rel="icon" href="assets/icoon-192.png" type="image/png">
+<!-- als app op het beginscherm (nodig voor pushmeldingen op de iPhone) -->
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="assets/icoon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="AIS Dashboard">
+<meta name="theme-color" content="#FFFFFF">
+<link rel="preload" href="assets/onest-latin.woff2" as="font" type="font/woff2" crossorigin>
+<style>
+/* AIS-dashboard: alleen voor Goran. A = website-check-aanvragen (versleuteld, van de bot), B = aanvragen per maand,
+   C = Search Console (rechtstreeks via Google, na "Koppel Google"). Zelfde werking als het overzicht van de websitechecks,
+   maar alleen AIS en in de AIS-huisstijl. De gegevens worden in de browser ontsleuteld met het wachtwoord. */
+@font-face { font-family: 'Onest'; src: url(assets/onest-latin.woff2) format('woff2'); font-weight: 400 800; font-display: swap; }
+@font-face { font-family: 'Instrument Serif'; src: url(assets/instrument-serif-italic-latin.woff2) format('woff2'); font-style: italic; font-display: swap; }
+:root { --navy: #0d074f; --navy-2: #17106a; --ink: #15123a; --ink-2: #3d3a5c; --muted: #6b6889; --line: #e3e1e9; --soft: #f4f5fa; --card: #fff; --bg: #fff;
+  --goud: #c9a227; --goud-licht: #e6c85a; --goud-tekst: #8a6800; --goud-zacht: #f8f0da;
+  --goed: #2F6B40; --goed-bg: #E6F2E9; --beter: #7A5A00; --beter-bg: #FBF0D6; --actie: #9A3322; --actie-bg: #F9E1DC; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Onest', system-ui, sans-serif; background: radial-gradient(900px 420px at 88% -140px, #e9eaf7, transparent 70%) no-repeat, var(--bg); color: var(--ink); line-height: 1.5; -webkit-font-smoothing: antialiased; }
+.verborgen { display: none !important; }
+button { font: inherit; cursor: pointer; }
+a { color: var(--navy); }
+/* inloggen */
+#login { min-height: 100vh; display: grid; place-items: center; padding: 16px; background: radial-gradient(600px 400px at 80% 0%, #e9eaf7, transparent 60%), radial-gradient(500px 300px at 0% 100%, #fbf4dc, transparent 60%), var(--bg); }
+.lbox { width: 100%; max-width: 380px; background: var(--card); border: 1px solid var(--line); border-radius: 22px; padding: 30px 28px; text-align: center; box-shadow: 0 30px 60px -40px rgba(13,7,79,.45); }
+.lbox img { width: 64px; height: 64px; margin-bottom: 10px; }
+.lbox h1 { font-size: 23px; letter-spacing: -.02em; color: var(--navy); margin-bottom: 4px; }
+.lbox h1 em { font-family: 'Instrument Serif', Georgia, serif; font-weight: 400; color: var(--goud-tekst); }
+.lbox p { color: var(--muted); font-size: 14px; margin-bottom: 18px; }
+.lbox input { width: 100%; padding: 13px 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--soft); color: var(--ink); font: inherit; font-size: 16px; }
+.lbox .onthoud { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 12px; font-size: 13.5px; color: var(--muted); cursor: pointer; }
+.lbox .onthoud input { width: 17px; height: 17px; padding: 0; margin: 0; accent-color: var(--navy); }
+.lbox button { width: 100%; margin-top: 10px; padding: 13px; border-radius: 999px; border: 0; background: var(--navy); color: #fff; font-weight: 600; }
+.fout { color: var(--actie); font-size: 13px; min-height: 20px; margin-top: 10px; }
+.slot { font-size: 12px; color: var(--muted); margin-top: 14px; }
+/* app */
+header { position: sticky; top: 0; z-index: 5; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
+.hin { max-width: 1100px; margin: 0 auto; padding: 10px 16px; display: flex; align-items: center; gap: 12px; }
+.hin img { width: 38px; height: 38px; }
+.hin h1 { font-size: 16px; letter-spacing: -.01em; color: var(--navy); }
+.hin .upd { margin-left: auto; color: var(--muted); font-size: 12px; }
+.ib { border: 1px solid var(--line); background: var(--card); color: var(--ink); border-radius: 999px; padding: 7px 12px; font-size: 13px; white-space: nowrap; }
+.ib svg { width: 15px; height: 15px; vertical-align: -3px; }
+.ib.aan { background: #E2F5EC; border-color: rgba(18,133,91,.3); color: #0E6B49; }
+.tabs { max-width: 1100px; margin: 0 auto; padding: 0 16px; display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; }
+.tabs::-webkit-scrollbar { display: none; }
+.tabs button { border: 0; background: transparent; color: var(--muted); padding: 10px 12px 11px; font-size: 14.5px; font-weight: 600; border-bottom: 2px solid transparent; white-space: nowrap; }
+.tabs button.aan { color: var(--navy); border-bottom-color: var(--goud); }
+main { max-width: 1100px; margin: 0 auto; padding: 22px 16px 60px; }
+.testbalk { background: var(--goud-zacht); border: 1px solid #ecd9a0; color: #5a4300; border-radius: 14px; padding: 10px 14px; font-size: 13.5px; margin-bottom: 16px; }
+.kop2 { font-size: 22px; letter-spacing: -.02em; color: var(--navy); margin-bottom: 4px; }
+.kop2 em { font-family: 'Instrument Serif', Georgia, serif; font-weight: 400; color: var(--goud-tekst); }
+.sub { color: var(--muted); font-size: 14.5px; margin-bottom: 18px; max-width: 70ch; }
+.kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 18px; }
+.kpi { background: var(--soft); border-radius: 16px; padding: 14px 16px; }
+.kpi b { display: block; font-size: 24px; letter-spacing: -.02em; color: var(--navy); }
+.kpi span { font-size: 11.5px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.tools { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; }
+.seg { display: inline-flex; background: var(--soft); border-radius: 999px; padding: 3px; }
+.seg button { border: 0; background: transparent; color: var(--muted); padding: 7px 14px; border-radius: 999px; font-size: 13.5px; }
+.seg button.aan { background: var(--card); color: var(--navy); box-shadow: 0 1px 3px rgba(13,7,79,.12); }
+.zoek { flex: 1; min-width: 180px; padding: 10px 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--card); color: var(--ink); font: inherit; font-size: 14px; }
+.leeg { text-align: center; color: var(--muted); padding: 48px 16px; border: 1px dashed var(--line); border-radius: 18px; }
+.kaart { display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; gap: 16px; align-items: center; background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 16px 18px; cursor: pointer; transition: border-color .2s, transform .2s; }
+.kaart:hover { border-color: var(--navy); }
+@media (hover: hover) { .kaart:hover { transform: translateY(-1px); } }
+.veeg { position: relative; margin-bottom: 10px; border-radius: 18px; overflow: hidden; }
+.veeg .kaart { position: relative; z-index: 1; touch-action: pan-y; }
+.wegknop { position: absolute; top: 0; right: 0; bottom: 0; width: 110px; border: 0; background: #E5484D; color: #fff; font-size: 14px; font-weight: 600; }
+.veeg:not(.bezig) .wegknop { visibility: hidden; }
+@media (hover: hover) and (pointer: fine) { .wegknop { display: none; } }
+.ring { width: 64px; height: 64px; }
+.kt { min-width: 0; }
+.kt h3 { font-size: 16px; letter-spacing: -.01em; color: var(--navy); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.meta { font-size: 13px; color: var(--muted); display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 2px 0 6px; }
+.st { font-size: 11.5px; font-weight: 600; padding: 2px 8px; border-radius: 999px; }
+.st.ok { background: var(--goed-bg); color: var(--goed); } .st.open { background: var(--beter-bg); color: var(--beter); }
+.st.mis { background: #FDECEA; color: #B42318; } .st.let { background: #FFF4D6; color: #8A5A00; }
+.tops { font-size: 13px; color: var(--ink); display: grid; gap: 2px; }
+.tops span::before { content: '•'; color: var(--goud); margin-right: 6px; }
+.knoppen { display: flex; flex-direction: column; gap: 6px; }
+.knop { border: 0; border-radius: 999px; padding: 8px 14px; font-size: 13px; font-weight: 600; background: var(--navy); color: #fff; white-space: nowrap; text-decoration: none; text-align: center; display: inline-block; }
+.knop.licht { background: var(--soft); color: var(--navy); }
+.knop.goud { background: var(--goud-licht); color: var(--navy); }
+.knop[aria-disabled="true"] { opacity: .45; pointer-events: none; }
+/* detail */
+#detail { position: fixed; inset: 0; z-index: 10; background: rgba(13,7,79,.42); display: flex; justify-content: flex-end; }
+.paneel { width: min(620px, 100%); height: 100%; overflow-y: auto; background: var(--bg); padding: 22px 22px 60px; }
+.pk { display: flex; gap: 14px; align-items: center; margin-bottom: 14px; }
+.pk h2 { font-size: 20px; letter-spacing: -.02em; color: var(--navy); }
+.sluit { margin-left: auto; }
+.blok { background: var(--soft); border-radius: 16px; padding: 14px 16px; margin-bottom: 12px; }
+.blok h4 { font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); margin-bottom: 8px; }
+.blok .knop.licht { background: var(--card); border: 1px solid var(--line); padding: 9px 16px; }
+.rij { display: flex; justify-content: space-between; gap: 10px; padding: 6px 0; border-top: 1px solid var(--line); font-size: 14px; }
+.rij:first-of-type { border-top: 0; }
+.rij small { display: block; color: var(--muted); font-size: 12.5px; }
+.pil { font-size: 11.5px; font-weight: 600; padding: 2px 9px; border-radius: 999px; white-space: nowrap; align-self: center; }
+.pil.goed { background: var(--goed-bg); color: var(--goed); } .pil.beter { background: var(--beter-bg); color: var(--beter); }
+.pil.actie { background: var(--actie-bg); color: var(--actie); } .pil.nakijken { background: var(--card); color: var(--muted); }
+.gegevens { display: grid; grid-template-columns: 110px 1fr; gap: 4px 10px; font-size: 14px; }
+.gegevens dt { color: var(--muted); }
+.letop { background: #FFF8E6; border: 1px solid #F1DFAE; border-radius: 14px; padding: 12px 14px; }
+.letop li { margin: 4px 0 4px 18px; font-size: 14px; line-height: 1.45; color: #5A4300; }
+.mailvb { background: #fff; color: var(--ink); border: 1px solid var(--line); border-radius: 12px; max-height: 460px; overflow: auto; }
+.mailvb .ond { padding: 10px 16px; border-bottom: 1px solid var(--line); font-size: 13px; color: var(--muted); }
+.mailvb .ond b { color: var(--ink); font-weight: 600; }
+.mailvb .lijf { padding: 6px 16px 10px; }
+.rk { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.uitleg { font-size: 12.5px; color: var(--muted); margin-top: 10px; line-height: 1.5; }
+.modal { position: fixed; inset: 0; z-index: 30; background: rgba(13,7,79,.42); display: grid; place-items: center; padding: 16px; }
+.modal .mk { background: #fff; border-radius: 22px; padding: 26px 24px 22px; width: 100%; max-width: 430px; box-shadow: 0 30px 70px -30px rgba(13,7,79,.55); }
+.modal h3 { font-size: 20px; letter-spacing: -.02em; color: var(--navy); margin-bottom: 8px; }
+.modal p { color: var(--muted); font-size: 15px; line-height: 1.55; margin-bottom: 20px; }
+.modal .rk { justify-content: flex-end; margin-top: 0; }
+.modal .knop { padding: 11px 18px; font-size: 14px; }
+.modal .knop.licht { background: #fff; border: 1px solid var(--line); }
+.toast { position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 90; width: max-content; max-width: min(520px, calc(100vw - 32px)); background: var(--navy); color: #fff; font-size: 14px; line-height: 1.45; padding: 12px 16px; border-radius: 14px; box-shadow: 0 16px 40px -16px rgba(13,7,79,.6); }
+/* grafiek (B en C): één reeks in navy, ronde bovenkant, dunne raster­lijnen, tooltip bij aanwijzen; tabel eronder */
+.grafiek { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 18px 18px 10px; margin-bottom: 14px; position: relative; }
+.grafiek h3 { font-size: 15px; color: var(--navy); margin-bottom: 2px; }
+.grafiek .gsub { font-size: 12.5px; color: var(--muted); margin-bottom: 8px; }
+.grafiek svg { width: 100%; height: auto; display: block; overflow: visible; }
+.grafiek .as { font-size: 11px; fill: var(--muted); }
+.grafiek .waarde { font-size: 11.5px; font-weight: 600; fill: var(--ink-2); }
+.grafiek .raster { stroke: #eceaf2; stroke-width: 1; }
+.grafiek .staaf { fill: var(--navy); }
+.grafiek .staaf.nu { fill: var(--navy-2); }
+.grafiek .vang { fill: transparent; cursor: default; }
+.grafiek .vang:hover + .staaf, .grafiek g.st:hover .staaf { fill: #2b2388; }
+.tip { position: absolute; pointer-events: none; background: var(--navy); color: #fff; font-size: 12.5px; padding: 6px 9px; border-radius: 8px; white-space: nowrap; transform: translate(-50%, -110%); z-index: 2; }
+details.tabel { margin-top: 8px; font-size: 13.5px; }
+details.tabel summary { cursor: pointer; color: var(--muted); font-size: 12.5px; padding: 4px 0 8px; }
+details.tabel table { width: 100%; border-collapse: collapse; }
+details.tabel th, details.tabel td { text-align: left; padding: 5px 6px; border-top: 1px solid var(--line); }
+details.tabel td.n, details.tabel th.n { text-align: right; font-variant-numeric: tabular-nums; }
+.stappen { list-style: none; counter-reset: s; display: grid; gap: 12px; margin: 14px 0 6px; }
+.stappen li { counter-increment: s; position: relative; padding-left: 38px; font-size: 14.5px; }
+.stappen li::before { content: counter(s); position: absolute; left: 0; top: -2px; width: 26px; height: 26px; border-radius: 50%; background: var(--navy); color: #fff; font-size: 13px; font-weight: 700; display: grid; place-items: center; }
+.stappen code { background: var(--soft); border: 1px solid var(--line); border-radius: 6px; padding: 1px 6px; font-size: 12.5px; }
+.later { color: var(--muted); font-size: 13.5px; border: 1px dashed var(--line); border-radius: 16px; padding: 14px 16px; }
+table.top { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+table.top th, table.top td { text-align: left; padding: 7px 6px; border-top: 1px solid var(--line); }
+table.top th { font-size: 11.5px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); border-top: 0; }
+table.top td.n, table.top th.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+table.top td.q { word-break: break-word; }
+@media (max-width: 640px) {
+  .hin .upd { display: none; } .hin h1 { font-size: 15px; margin-right: auto; } .hin .ib .mt { display: none; } .hin .ib { padding: 7px 10px; } #meld { margin-left: auto; }
+  .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .kaart { grid-template-columns: 52px minmax(0, 1fr); }
+  .ring { width: 52px; height: 52px; }
+  .knoppen { grid-column: 1 / -1; flex-direction: row; }
+  .knoppen .knop { flex: 1; }
+}
+</style>
+</head>
+<body>
+<div id="login"><form class="lbox" id="lform">
+  <img src="assets/ais-logo.png" alt="AIS-Groep" width="64" height="64">
+  <h1>AIS <em>Dashboard</em></h1>
+  <p>Website-checks, aanvragen per maand en Search Console. Alleen voor Goran.</p>
+  <label class="verborgen" for="pw">Wachtwoord</label>
+  <input id="pw" type="password" autocomplete="current-password" placeholder="Wachtwoord" required>
+  <label class="onthoud"><input type="checkbox" id="onthoud"> Ingelogd blijven op dit toestel</label>
+  <button type="submit">Openen</button>
+  <div class="fout" id="lfout" role="alert"></div>
+  <div class="slot">🔒 Versleuteld · AES-256-GCM · alleen te openen met je wachtwoord</div>
+</form></div>
+
+<div id="app" class="verborgen">
+  <header>
+    <div class="hin"><img src="assets/ais-logo.png" alt="AIS-Groep" width="38" height="38"><h1>Dashboard</h1><span class="upd" id="upd"></span>
+      <button class="ib" id="meld" type="button" hidden>Meldingen aanzetten</button>
+      <button class="ib" id="uit" aria-label="Uitloggen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg><span class="mt"> Uitloggen</span></button></div>
+    <nav class="tabs" id="tabs" aria-label="Onderdelen"><button data-tab="aanvragen" class="aan">Website-checks</button><button data-tab="maand">Per maand</button><button data-tab="sc">Search Console</button></nav>
+  </header>
+  <main>
+    <div class="testbalk verborgen" id="testbalk">Lokale test met <b>testgegevens</b> (echte checks van deze Mac, niet van de bot). Meldingen en de knoppen offline halen, opnieuw checken en verwijderen staan uit tot de echte AIS-gegevens er zijn.</div>
+
+    <section id="t-aanvragen">
+      <div class="kpis" id="kpis"></div>
+      <div class="tools">
+        <div class="seg" id="fstat"><button data-v="alle" class="aan">Alles</button><button data-v="open">Nog versturen</button><button data-v="ok">Verstuurd</button></div>
+        <input class="zoek" id="q" type="search" placeholder="Zoek op bedrijf, naam of website" aria-label="Zoeken">
+      </div>
+      <div id="lijst"></div>
+    </section>
+
+    <section id="t-maand" class="verborgen">
+      <h2 class="kop2">Aanvragen <em>per maand</em></h2>
+      <p class="sub">Website-checks via ais-groep.nl, geteld op de dag van aanvragen. Gewone websiteaanvragen (Website, Webshop) gaan niet naar de bot en tellen hier (nog) niet mee.</p>
+      <div class="kpis" id="mkpis"></div>
+      <div class="grafiek" id="mgrafiek"></div>
+    </section>
+
+    <section id="t-sc" class="verborgen"><div id="sc"></div></section>
+  </main>
+</div>
+
+<div id="detail" class="verborgen" role="dialog" aria-modal="true"><div class="paneel" id="paneel"></div></div>
+
+<script>
+(function () {
+  // ---- instellingen ----------------------------------------------------------------------------------------------
+  var LOKAAL = /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
+  var CONFIG = {
+    // AIS-checks van de bot (zelfde formaat als het overzicht van de websitechecks, eigen AIS-wachtwoord)
+    bron: LOKAAL ? 'data-test/' : 'https://gzivanovic-cmyk.github.io/websitecheck/data-ais/',
+    test: LOKAAL,
+    // server voor meldingen en acties (CORS voor rapport.ais-groep.nl); app=ais
+    server: 'https://www.go4itstudio.com',
+    vapid: 'BBgmOSuZO2k5gi-LmZb8IyHE6hJbJgieE-G7U84VSFvx4-wiWLUxw_ob8o8F_4oZRKajjGkY-c_Xi4BoC7SBNXw',
+    bot: 'g.zivanovic@mail.grokbot.com',
+    // Search Console: OAuth-client-ID uit Google Cloud (Goran maakt hem zelf aan; zie de stappen in het tabblad). Leeg = nog niet gekoppeld.
+    googleClientId: ''
+  };
+
+  var sleutelPw = null, data = [], fstat = 'alle', tab = 'aanvragen';
+  var $ = function (id) { return document.getElementById(id); };
+  var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
+  var b64 = function (s) { var b = atob(s), u = new Uint8Array(b.length); for (var i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return u; };
+  var MAANDEN = ['jan', 'feb', 'mrt', 'apr', 'mei', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec'];
+  var getal = function (n) { return Number(n).toLocaleString('nl-NL'); };
+
+  // ---- ontsleutelen (gelijk aan het overzicht van de websitechecks) ---------------------------------------------
+  async function ontsleutel(enc, pw) {
+    var basis = await crypto.subtle.importKey('raw', new TextEncoder().encode(pw), 'PBKDF2', false, ['deriveKey']);
+    var key = await crypto.subtle.deriveKey({ name: 'PBKDF2', salt: b64(enc.salt), iterations: enc.iter, hash: 'SHA-256' }, basis, { name: 'AES-GCM', length: 256 }, false, ['decrypt']);
+    var platte = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64(enc.iv) }, key, b64(enc.ct));
+    return JSON.parse(new TextDecoder().decode(platte));
+  }
+  async function haal(pad) {
+    var r = await fetch(pad + '?t=' + Date.now(), { cache: 'no-store' });
+    if (!r.ok) throw new Error(r.status === 404 ? 'leeg' : 'fout');
+    return r.json();
+  }
+  function hex(buf) { return Array.prototype.map.call(new Uint8Array(buf), function (b) { return ('0' + b.toString(16)).slice(-2); }).join(''); }
+
+  // ---- A. website-checks --------------------------------------------------------------------------------------------
+  function kleur(c) { return c >= 8 ? ['#2F6B40', '#E6F2E9'] : c >= 5.5 ? ['#8A5A00', '#FBF0D6'] : ['#9A3322', '#F9E1DC']; }
+  function ring(c) {
+    if (c == null) return '<svg class="ring" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="26" fill="#F1F2F5" stroke="#E3E5EC" stroke-width="7"/><text x="32" y="39" text-anchor="middle" font-size="20" font-weight="800" fill="#8A90A2" font-family="Onest, system-ui">!</text></svg>';
+    var k = kleur(c), om = 2 * Math.PI * 26, d = om * c / 10;
+    return '<svg class="ring" viewBox="0 0 64 64" aria-label="Cijfer ' + String(c).replace('.', ',') + '"><circle cx="32" cy="32" r="26" fill="' + k[1] + '" stroke="' + k[1] + '" stroke-width="7"/>' +
+      '<circle cx="32" cy="32" r="26" fill="none" stroke="' + k[0] + '" stroke-width="7" stroke-linecap="round" stroke-dasharray="' + d.toFixed(1) + ' ' + om.toFixed(1) + '" transform="rotate(-90 32 32)"/>' +
+      '<text x="32" y="38" text-anchor="middle" font-size="17" font-weight="800" fill="' + k[0] + '" font-family="Onest, system-ui">' + String(c).replace('.', ',') + '</text></svg>';
+  }
+  function status(c) { if (c.mislukt) return '<span class="st mis">Niet gelukt</span>'; return c.verstuurd ? '<span class="st ok">✓ Verstuurd ' + esc(c.verstuurd.split('-').reverse().join('-')) + '</span>' : '<span class="st open">Nog versturen</span>'; }
+  var LABEL = { goed: 'Goed', beter: 'Kan beter', actie: 'Actie nodig', nakijken: 'Niet bekeken' };
+
+  function toonLijst() {
+    var q = $('q').value.toLowerCase().trim();
+    var rijen = data.filter(function (c) {
+      if (fstat === 'open' && c.verstuurd) return false;
+      if (fstat === 'ok' && !c.verstuurd) return false;
+      return !q || [c.bedrijf, c.naam, c.host, c.mail].join(' ').toLowerCase().indexOf(q) !== -1;
+    });
+    var nu = new Date(), dezeMaand = nu.getFullYear() + '-' + ('0' + (nu.getMonth() + 1)).slice(-2);
+    var metCijfer = data.filter(function (c) { return c.cijfer != null; });
+    var gem = metCijfer.length ? (metCijfer.reduce(function (s, c) { return s + c.cijfer; }, 0) / metCijfer.length) : 0;
+    $('kpis').innerHTML = [[data.length, 'checks in totaal'], [data.filter(function (c) { return !c.verstuurd && !c.mislukt; }).length, 'nog te versturen'],
+      [data.filter(function (c) { return (c.datum || '').slice(0, 7) === dezeMaand; }).length, 'deze maand'], [metCijfer.length ? gem.toFixed(1).replace('.', ',') : '–', 'gemiddeld cijfer']]
+      .map(function (k) { return '<div class="kpi"><b>' + k[0] + '</b><span>' + k[1] + '</span></div>'; }).join('');
+    if (!rijen.length) { $('lijst').innerHTML = '<div class="leeg">' + (data.length ? 'Niets gevonden met dit filter.' : 'Nog geen website-checks. Zodra er een aanvraag via ais-groep.nl binnenkomt, staat hij hier.') + '</div>'; return; }
+    $('lijst').innerHTML = rijen.map(function (c) {
+      return '<div class="veeg"><button class="wegknop" type="button" data-wis="' + esc(c.id) + '">Verwijderen</button><article class="kaart" data-id="' + esc(c.id) + '">' + ring(c.cijfer) +
+        '<div class="kt"><h3>' + esc(c.bedrijf || c.host) + '</h3><div class="meta"><span>' + esc(c.datum) + '</span><span>' + esc(c.host) + '</span>' + (c.naam ? '<span>' + esc(c.naam) + '</span>' : '') + status(c) +
+        ((c.meldingen || []).length ? '<span class="st let">Let op</span>' : '') + '</div>' +
+        '<div class="tops">' + (c.mislukt ? '<span>' + esc(c.mislukt) + '</span>' : (c.top || []).map(function (t) { return '<span>' + esc(t.kort) + '</span>'; }).join('')) + '</div></div>' +
+        '<div class="knoppen">' + (c.mislukt ? '' : '<button class="knop" data-pdf="' + esc(c.id) + '">Rapport</button>') + '<button class="knop licht" data-open="' + esc(c.id) + '">Details</button></div></article></div>';
+    }).join('');
+  }
+
+  function bevestig(kop, tekst, ja, alleenJa) {
+    return new Promise(function (klaar) {
+      var m = document.createElement('div');
+      m.className = 'modal'; m.setAttribute('role', 'dialog'); m.setAttribute('aria-modal', 'true');
+      m.innerHTML = '<div class="mk"><h3>' + esc(kop) + '</h3><p>' + esc(tekst) + '</p><div class="rk">' + (alleenJa ? '' : '<button class="knop licht" type="button" data-k="nee">Annuleren</button>') +
+        '<button class="knop" type="button" data-k="ja">' + esc(ja) + '</button></div></div>';
+      function toets(e) { if (e.key === 'Escape') sluit(false); }
+      function sluit(v) { m.remove(); document.removeEventListener('keydown', toets); klaar(v); }
+      m.addEventListener('click', function (e) { var k = e.target.getAttribute('data-k'); if (k) sluit(k === 'ja'); else if (e.target === m) sluit(false); });
+      document.addEventListener('keydown', toets);
+      document.body.appendChild(m);
+      m.querySelector('[data-k="ja"]').focus();
+    });
+  }
+  function toast(tekst) {
+    var t = document.createElement('div'); t.className = 'toast'; t.setAttribute('role', 'status'); t.textContent = tekst;
+    document.body.appendChild(t); setTimeout(function () { t.remove(); }, 5200);
+  }
+  // opdrachten aan de bot: ondertekend met een sleutel uit het AIS-wachtwoord (de bot accepteert hem alleen voor AIS-checks)
+  async function teken(actie, id, tijd) {
+    var enc = new TextEncoder();
+    var k1 = await crypto.subtle.importKey('raw', enc.encode(sleutelPw), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+    var k2 = await crypto.subtle.importKey('raw', await crypto.subtle.sign('HMAC', k1, enc.encode('websitecheck-actie')), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+    return hex(await crypto.subtle.sign('HMAC', k2, enc.encode(actie + ' ' + id + ' ' + tijd)));
+  }
+  async function stuurActie(soort, id) {
+    var tijd = String(Math.floor(Date.now() / 1000)), sig = await teken(soort, id, tijd);
+    var r = await fetch(CONFIG.server + '/websitecheck-actie.php', { method: 'POST', body: new URLSearchParams({ actie: soort, id: id, tijd: tijd, app: 'ais', handtekening: sig }) });
+    if (!(await r.json()).ok) throw new Error(String(r.status));
+  }
+  async function trekIn(code) {
+    var r = await fetch(CONFIG.server + '/websitecheck-intrek.php', { method: 'POST', body: new URLSearchParams({ code: code }) });
+    return (await r.json()).ok === true;
+  }
+  async function isOffline(code) {
+    var h = hex(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(code)));
+    return (await (await fetch(CONFIG.server + '/websitecheck-intrek.php?h=' + h, { cache: 'no-store' })).json()).offline === true;
+  }
+  async function laadItem(id) { return ontsleutel(await haal(CONFIG.bron + id + '.enc'), sleutelPw); }
+  async function openPdf(id) {
+    var it = await laadItem(id);
+    var blob = new Blob([b64(it.pdf)], { type: 'application/pdf' }), url = URL.createObjectURL(blob);
+    var a = document.createElement('a'); a.href = url; a.target = '_blank'; a.rel = 'noopener'; a.download = 'website-check-' + (it.samenvatting.host || id) + '.pdf';
+    document.body.appendChild(a); a.click(); a.remove();
+  }
+
+  // de conceptmail als opgemaakte AIS-mail (tabellen en inline stijl, zodat Apple Mail hem bij plakken overneemt), met Gorans AIS-handtekening
+  function netteNaam(regel) {
+    return regel.replace(/^(Hoi|Beste)\s+([^,]+),$/, function (m, a, n) {
+      var gelijk = n === n.toUpperCase() || n === n.toLowerCase();
+      var tussen = ['van', 'de', 'der', 'den', 'het', 'ter', 'ten', 'te', 'in', "'t", 'op', 'aan', 'bij', 'uit', 'la', 'le', 'du', 'da'];
+      var net = n.toLowerCase().split(' ').map(function (w, i) {
+        return i && tussen.indexOf(w) !== -1 ? w : w.split('-').map(function (d) { return d.charAt(0).toUpperCase() + d.slice(1); }).join('-');
+      }).join(' ');
+      return a + ' ' + (gelijk ? net : n) + ',';
+    });
+  }
+  function mailHtml(tekst, host) {
+    var ACC = '#0d074f', ZACHT = '#ECEEF7', INK = '#0B1020', GRIJS = '#5A6072', LIJN = '#E6E8F0';
+    var FONT = "-apple-system,BlinkMacSystemFont,'Helvetica Neue',Helvetica,Arial,sans-serif";
+    var nobr = function (s) { return host ? s.split(host).join(host.replace(/\./g, '&#8203;.')) : s; };
+    var e = function (s) { return nobr(esc(s)); };
+    var hoofd = function (s) { s = s.trim(); return s.charAt(0).toUpperCase() + s.slice(1); };
+    var knop = function (url, label, gevuld) {
+      return '<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:separate"><tr><td' + (gevuld ? ' bgcolor="' + ACC + '"' : '') + ' style="border-radius:999px;' +
+        (gevuld ? 'background:' + ACC : 'border:1.5px solid ' + ACC) + '"><a href="' + esc(url) + '" style="display:inline-block;padding:' + (gevuld ? '14px 20px' : '12px 18px') +
+        ';font-family:' + FONT + ';font-size:15px;font-weight:600;line-height:20px;color:' + (gevuld ? '#ffffff' : ACC) + ';text-decoration:none;border-radius:999px"><font color="' + (gevuld ? '#ffffff' : ACC) + '"><span style="color:' + (gevuld ? '#ffffff' : ACC) + '">' + label + '</span></font></a></td></tr></table>';
+    };
+    var kl = function (c) { var n = parseFloat(c.replace(',', '.')); return n >= 8 ? ['#12855B', '#E2F5EC'] : n >= 5.5 ? ['#9A6700', '#FFF4D6'] : ['#B42318', '#FDECEC']; };
+    var p = function (h, extra) { return '<p style="margin:0 0 16px;font-family:' + FONT + ';font-size:16px;line-height:26px;color:' + INK + (extra || '') + '">' + h + '</p>'; };
+    var kop = function (s) { return '<p style="margin:28px 0 14px;font-family:' + FONT + ';font-size:13px;line-height:18px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:' + GRIJS + '">' + s + '</p>'; };
+    var blokken = tekst.replace(/\r/g, '').trim().split(/\n{2,}/), d = { los: [] };
+    blokken.forEach(function (b, i) {
+      var u = b.match(/https?:\/\/(rapport\.|localhost)\S+/);
+      if (i === 0 && /^(Hoi|Beste)\b/.test(b)) { d.aanhef = netteNaam(b.trim()); return; }
+      if (u) { d.url = u[0]; d.intro = b.replace(u[0], '').replace(/\s*(Je|Uw) persoonlijke rapport staat hier klaar:\s*/, ' ').trim(); return; }
+      if (/^(Kort gezegd|Ik ben eerlijk|Wij zijn eerlijk):/.test(b)) {
+        var c = b.match(/Commercieel een (\d+,\d), technisch een (\d+,\d)(?:, SEO-basis een (\d+,\d))?\.\s*/);
+        var zin = b.replace(/^(Kort gezegd|Ik ben eerlijk|Wij zijn eerlijk):\s*/, '');
+        d.oordeel = hoofd(zin.split(/(?<=\.)\s/)[0]);
+        d.rest = zin.slice(zin.split(/(?<=\.)\s/)[0].length).replace(c ? c[0] : '', '').trim();
+        if (c) d.cijfers = [['Commercieel', c[1]], ['Technisch', c[2]]].concat(c[3] ? [['SEO-basis', c[3]]] : []);
+        return;
+      }
+      var regels = b.split('\n');
+      if (regels.every(function (r) { return /^\d+\.\s/.test(r); })) {
+        d.punten = regels.map(function (r) { var z = r.replace(/^\d+\.\s+/, ''), j = z.indexOf('. '); return j > 0 ? [z.slice(0, j + 1), z.slice(j + 2)] : [z, '']; });
+        return;
+      }
+      if (/^Dit springt er het meest uit:/.test(b)) { d.lijstkop = 'Dit springt er het meest uit'; return; }
+      if (/^Wat al goed gaat:/.test(b)) { d.goed = b.replace(/^Wat al goed gaat:\s*/, '').replace(/\.\s*$/, '').split(/,\s+|\s+en\s+(?=[^,]+$)/).map(hoofd); return; }
+      if (/^(Zullen we|Wilt u)/.test(b)) { d.slot = b; return; }
+      if (/^(Groet|Met vriendelijke groet),/.test(b)) { d.groet = b; return; }
+      d.los.push(b);
+    });
+    var h = '<tr><td height="4" bgcolor="#0d074f" style="height:4px;padding:0;font-size:0;line-height:0;background:#0d074f;background-image:linear-gradient(90deg,#0d074f 0%,#3a3f9e 55%,#D4A72C 100%)">&nbsp;</td></tr>' +
+      '<tr><td style="padding:22px 22px 4px"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>' +
+      '<td><img src="https://rapport.ais-groep.nl/assets/ais-logo.png" width="58" height="58" alt="AIS-Groep" style="display:block;width:58px;height:58px;border:0"></td>' +
+      '<td align="right" style="font-family:' + FONT + ';font-size:12px;letter-spacing:1.5px;font-weight:700;color:' + ACC + '">WEBSITE-CHECK</td></tr></table></td></tr>';
+    h += '<tr><td style="padding:22px 22px 0">' + (d.aanhef ? p(e(d.aanhef)) : '') + (d.intro ? p(e(d.intro)) : '') + '</td></tr>';
+    if (d.oordeel || d.url) {
+      h += '<tr><td style="padding:4px 22px 0"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="' + ZACHT + '" style="background:' + ZACHT + ';border-radius:18px"><tr><td bgcolor="' + ZACHT + '" style="padding:20px 18px 22px;border-radius:18px">' +
+        '<p style="margin:0 0 6px;font-family:' + FONT + ';font-size:12px;letter-spacing:1.2px;font-weight:700;text-transform:uppercase;color:' + ACC + '">Uw website-check' + (host ? ' · ' + e(host) : '') + '</p>' +
+        (d.oordeel ? '<p style="margin:0 0 18px;font-family:' + FONT + ';font-size:22px;line-height:29px;font-weight:700;color:' + INK + '">' + e(d.oordeel) + '</p>' : '');
+      if (d.cijfers) {
+        h += '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 20px"><tr>' + d.cijfers.map(function (c, i) {
+          var k = kl(c[1]);
+          return (i ? '<td width="10" style="width:10px">&nbsp;</td>' : '') + '<td align="center" bgcolor="#ffffff" style="background:#ffffff;border-radius:14px;padding:14px 6px;border:1px solid ' + LIJN + '">' +
+            '<div style="font-family:' + FONT + ';font-size:28px;line-height:32px;font-weight:700;color:' + k[0] + '">' + c[1] + '</div>' +
+            '<div style="font-family:' + FONT + ';font-size:12px;line-height:16px;color:' + GRIJS + ';margin-top:4px">' + c[0] + '</div></td>';
+        }).join('') + '</tr></table>';
+      }
+      if (d.url) h += knop(d.url, 'Bekijk uw persoonlijke rapport &rarr;', true) +
+        '<p style="margin:12px 0 0;font-family:' + FONT + ';font-size:13px;line-height:19px;color:' + GRIJS + '">Met de PDF om te downloaden. De pagina blijft een jaar online.</p>';
+      h += '</td></tr></table></td></tr>';
+    }
+    if (d.rest || d.punten) {
+      h += '<tr><td style="padding:10px 22px 0">' + (d.rest ? p(e(d.rest), ';margin-top:18px') : '') + (d.lijstkop ? kop(d.lijstkop) : '');
+      (d.punten || []).forEach(function (pt, i) {
+        h += '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 14px"><tr>' +
+          '<td valign="top" width="40" style="width:40px;padding-top:2px"><table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td width="28" height="28" align="center" valign="middle" bgcolor="' + ACC + '" style="width:28px;height:28px;border-radius:50%;background:' + ACC + ';font-family:' + FONT + ';font-size:14px;font-weight:700;line-height:28px;text-align:center;color:#ffffff"><font color="#ffffff"><span style="color:#ffffff">' + (i + 1) + '</span></font></td></tr></table></td>' +
+          '<td valign="top" style="font-family:' + FONT + ';font-size:16px;line-height:24px;color:' + INK + '"><b>' + e(pt[0]) + '</b>' +
+          (pt[1] ? '<div style="font-size:15px;line-height:23px;color:' + GRIJS + ';margin-top:2px">' + e(pt[1]) + '</div>' : '') + '</td></tr></table>';
+      });
+      h += '</td></tr>';
+    }
+    if (d.goed && d.goed.length) {
+      h += '<tr><td style="padding:6px 22px 0">' + kop('Wat al goed gaat') + d.goed.map(function (g) {
+        return '<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 8px"><tr><td valign="top" width="30" style="width:30px"><table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td width="20" height="20" align="center" valign="middle" bgcolor="#E2F5EC" style="width:20px;height:20px;border-radius:50%;background:#E2F5EC;font-family:' + FONT + ';font-size:12px;font-weight:700;line-height:20px;text-align:center;color:#12855B"><font color="#12855B"><span style="color:#12855B">&#10003;</span></font></td></tr></table></td>' +
+          '<td style="font-family:' + FONT + ';font-size:15px;line-height:21px;color:' + INK + '">' + e(g) + '</td></tr></table>';
+      }).join('') + '</td></tr>';
+    }
+    d.los.forEach(function (b) { h += '<tr><td style="padding:6px 22px 0">' + p(e(b).replace(/\n/g, '<br>')) + '</td></tr>'; });
+    if (d.slot) {
+      var tel = (d.slot.match(/(0[\d ]{9,13}\d)/) || [])[1];
+      h += '<tr><td style="padding:22px 22px 0"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top:1px solid ' + LIJN + '"><tr><td style="padding-top:22px">' + p(e(d.slot)) +
+        (tel ? '<div style="display:inline-block;margin:0 0 10px;vertical-align:top">' + knop('tel:+31' + tel.replace(/\D/g, '').replace(/^0/, ''), 'Bel ' + tel, false) + '</div>' : '') + '</td></tr></table></td></tr>';
+    }
+    var linkje = function (url, tekst, kleur, extra) { return '<a href="' + url + '" style="color:' + kleur + ';text-decoration:none' + (extra || '') + '"><font color="' + kleur + '"><span style="color:' + kleur + '">' + tekst + '</span></font></a>'; };
+    h += '<tr><td style="padding:14px 22px 28px"><p style="margin:0 0 16px;font-family:' + FONT + ';font-size:16px;line-height:26px;color:' + INK + '">Met vriendelijke groet,</p>' +
+      '<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse"><tr>' +
+      '<td valign="middle" width="64" style="width:64px;padding:0 16px 0 0"><img src="https://rapport.ais-groep.nl/assets/ais-logo.png" width="64" height="64" alt="AIS-Groep" style="display:block;width:64px;height:64px;border:0"></td>' +
+      '<td valign="middle" style="padding:2px 0 2px 16px;border-left:2px solid #c9a227;font-family:' + FONT + '">' +
+      '<div style="font-size:16px;line-height:22px;font-weight:700;color:' + INK + '">Goran Živanović</div>' +
+      '<div style="font-size:14px;line-height:20px;color:#6E6B86">AIS-Groep · Hoorn</div>' +
+      '<div style="font-size:13.5px;line-height:20px;padding-top:6px;color:#6E6B86">' + linkje('tel:+31881700602', '088&nbsp;1700&nbsp;602', '#6E6B86', ';white-space:nowrap') + '<span style="color:#c9a227"> &nbsp;·&nbsp; </span>' + linkje('mailto:g.zivanovic@ais-groep.nl', 'g.zivanovic@ais-groep.nl', '#6E6B86') + '</div>' +
+      '<div style="font-size:13.5px;line-height:20px;padding-top:6px;font-weight:600">' + linkje('https://rapport.ais-groep.nl/', 'Gratis website-check aanvragen &rarr;', ACC) + '</div>' +
+      '<div style="font-family:Georgia,\'Times New Roman\',serif;font-style:italic;font-size:15px;line-height:20px;padding-top:6px;color:#b8901a">Tot uw dienst.</div>' +
+      '</td></tr></table></td></tr>';
+    return '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#F4F5F9"><tr><td align="center" style="padding:16px 6px">' +
+      '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;background:#ffffff;border:1px solid ' + LIJN + ';border-radius:20px;border-collapse:separate;overflow:hidden">' + h + '</table>' +
+      '<p style="margin:16px 0 0;font-family:' + FONT + ';font-size:12px;line-height:18px;color:#8A8FA3;text-align:center">U ontvangt deze mail omdat u een website-check aanvroeg via ais-groep.nl.</p></td></tr></table>';
+  }
+  function kopieerMail(html, tekst) {
+    if (window.ClipboardItem && navigator.clipboard && navigator.clipboard.write) {
+      return navigator.clipboard.write([new ClipboardItem({ 'text/html': new Blob([html], { type: 'text/html' }), 'text/plain': new Blob([tekst], { type: 'text/plain' }) })]);
+    }
+    return navigator.clipboard.writeText(tekst);
+  }
+
+  async function openDetail(id) {
+    var c = data.find(function (x) { return x.id === id; });
+    $('paneel').innerHTML = '<p>Openen…</p>'; $('detail').classList.remove('verborgen');
+    var it = await laadItem(id), s = it.samenvatting, cm = (s.klantlink && s.klantmail) || s.conceptmail || {};
+    var naar = s.mail || '';
+    var mailto = naar ? 'mailto:' + encodeURIComponent(naar) + '?bcc=' + encodeURIComponent(CONFIG.bot) + '&subject=' + encodeURIComponent(cm.onderwerp || '') + '&body=' + encodeURIComponent(cm.tekst || '') : '';
+    var psi = s.psi || {}, ps = '';
+    ['mobiel', 'computer'].forEach(function (k) { var d = psi[k]; if (d) ps += '<div class="rij"><span>PageSpeed ' + (k === 'mobiel' ? 'telefoon' : 'computer') + '</span><span>prestaties ' + d.score + ' · SEO ' + d.seo + '</span></div>'; });
+    var acties = !CONFIG.test;
+    $('paneel').innerHTML = '<div class="pk">' + ring(s.cijfer) + '<div><h2>' + esc(s.bedrijf || s.host) + '</h2><div class="meta"><span>' + esc(s.datum) + '</span>' + status(c || s) + '</div></div><button class="ib sluit" id="sluit">Sluiten</button></div>' +
+      '<div class="blok"><h4>Aanvrager</h4><dl class="gegevens"><dt>Naam</dt><dd>' + esc(s.naam || '–') + '</dd><dt>E-mail</dt><dd>' + (s.mail ? '<a href="mailto:' + esc(s.mail) + '">' + esc(s.mail) + '</a>' : '–') + '</dd>' +
+      '<dt>Telefoon</dt><dd>' + (s.telefoon ? '<a href="tel:' + esc(s.telefoon) + '">' + esc(s.telefoon) + '</a>' : '–') + '</dd><dt>Website</dt><dd><a href="' + esc(s.url) + '" target="_blank" rel="noopener">' + esc(s.host) + '</a></dd>' +
+      (s.vraag ? '<dt>Vraag</dt><dd>' + esc(s.vraag) + '</dd>' : '') + (s.klant_ais ? '<dt>Klant AIS</dt><dd>' + esc(s.klant_ais) + '</dd>' : '') + '</dl></div>' +
+      ((s.meldingen || []).length ? '<div class="blok"><h4>Let op (alleen voor jou)</h4><ul class="letop">' + s.meldingen.map(function (m) { return '<li>' + esc(m) + '</li>'; }).join('') + '</ul></div>' : '') +
+      (s.mislukt
+        ? '<div class="blok"><h4>Niet gelukt</h4><p class="uitleg" style="margin-top:0"><b>' + esc(s.mislukt) + '.</b> Er is geen rapport gemaakt. Laat het opnieuw proberen, of kijk zelf naar de site en neem contact op met de aanvrager.</p></div>'
+        : '<div class="blok"><h4>Uitkomst</h4>' + (s.onderdelen || []).map(function (o) { return '<div class="rij"><div>' + esc(o.titel) + '<small>' + esc(o.kort) + '</small></div><span class="pil ' + o.status + '">' + LABEL[o.status] + '</span></div>'; }).join('') + ps + '</div>') +
+      (s.mislukt ? '' : s.klantlink
+        ? '<div class="blok"><h4>Klantpagina</h4><p style="word-break:break-all"><a href="' + esc(s.klantlink) + '" target="_blank" rel="noopener">' + esc(s.klantlink.replace(/#.*/, '#…')) + '</a></p>' +
+          '<p class="uitleg">Alleen wie deze link heeft, kan de pagina openen. Online tot ' + esc((s.klantlink_verloopt || '').split('-').reverse().join('-')) + '.</p>' +
+          '<p class="uitleg" id="kpstatus" style="color:#B42318;font-weight:600" hidden>Offline gehaald: deze link werkt niet meer.</p>' +
+          '<div class="rk"><button class="knop licht" id="kopielink">Kopieer link</button></div></div>'
+        : '<div class="blok"><h4>Klantpagina</h4><p class="uitleg" style="margin-top:0">Deze check heeft (nog) geen klantpagina.</p></div>') +
+      '<div class="blok"><h4>Niet tevreden?</h4><p class="uitleg" style="margin-top:0">' + (acties ? 'Een klik geeft de opdracht direct door aan je bot. Alleen jij kunt dit: de opdracht is ondertekend met je AIS-wachtwoord.' : 'Uit in de lokale test: deze checks bestaan alleen op deze Mac, niet bij de bot.') + '</p><div class="rk">' +
+        (s.klantlink ? '<a class="knop licht" data-actie="verwijder" href="#"' + (acties ? '' : ' aria-disabled="true"') + '>Klantpagina offline halen</a>' : '') +
+        '<a class="knop licht" data-actie="opnieuw" href="#"' + (acties ? '' : ' aria-disabled="true"') + '>Opnieuw laten checken</a><button class="knop licht" type="button" id="wisknop"' + (acties ? '' : ' aria-disabled="true" disabled') + '>Uit overzicht verwijderen</button></div><p class="uitleg" id="actienoot" hidden></p></div>' +
+      (s.mislukt ? '' : '<div class="blok"><h4>Conceptmail aan de klant</h4><div class="mailvb"><div class="ond">Onderwerp: <b>' + esc(cm.onderwerp) + '</b></div><div class="lijf">' + mailHtml(cm.tekst || '', s.host) + '</div></div>' +
+      '<div class="rk"><button class="knop" id="kopie">Kopieer mail</button>' + (mailto ? '<button class="knop licht" type="button" id="openmail">Open in Mail</button>' : '') + '<button class="knop licht" data-pdf="' + esc(id) + '">Rapport (PDF)</button></div>' +
+      '<p class="uitleg">' + (s.klantlink ? 'Lees het rapport na en stuur de klant alleen de link: daarmee keur je het goed. ' : 'Lees het rapport even na. ') +
+      '<b>Verstuur vanaf g.zivanovic@ais-groep.nl.</b> Via “Open in Mail” staat de BCC naar je bot er al bij: die zet de check dan op verstuurd.</p></div>');
+    $('sluit').onclick = function () { $('detail').classList.add('verborgen'); };
+    if ($('kopie')) $('kopie').onclick = function () { kopieerMail(mailHtml(cm.tekst || '', s.host), cm.tekst || '').then(function () { $('kopie').textContent = 'Gekopieerd'; }); };
+    if ($('openmail')) $('openmail').onclick = function () {
+      var klaar = kopieerMail(mailHtml(cm.tekst || '', s.host), cm.tekst || '');   // in dezelfde tik, anders weigert Safari het klembord
+      location.href = mailto.replace(/&body=.*$/, '');
+      klaar.then(function () { toast('De opgemaakte mail staat klaar. Klik in je nieuwe mail en druk op ⌘V (iPhone: tik en kies Plak).'); })
+        .catch(function () { location.href = mailto; });
+    };
+    if ($('kopielink')) $('kopielink').onclick = function () { navigator.clipboard.writeText(s.klantlink).then(function () { $('kopielink').textContent = 'Gekopieerd'; }); };
+    if (!acties) return;
+    var direct = !!(s.klantlink && s.klantlink_intrek);
+    function toonOffline() {
+      $('kpstatus').hidden = false; $('kopielink').style.display = 'none';
+      var k = document.querySelector('#paneel a[data-actie="verwijder"]'); if (k) k.style.display = 'none';
+    }
+    if (direct) isOffline(s.klantlink_intrek).then(function (weg) { if (weg) toonOffline(); }).catch(function () {});
+    document.querySelectorAll('#paneel a[data-actie]').forEach(function (a) {
+      a.addEventListener('click', async function (ev) {
+        ev.preventDefault();
+        var soort = a.dataset.actie, noot = $('actienoot'), naam = s.bedrijf || s.host, offline = false;
+        var ok = await bevestig(soort === 'verwijder' ? 'Klantpagina offline halen?' : 'Opnieuw laten checken?',
+          soort === 'verwijder' ? 'De klantpagina van ' + naam + ' gaat offline. Een link die je al hebt verstuurd, werkt daarna niet meer.'
+                                : 'De bot doet de website-check van ' + naam + ' opnieuw. Dat duurt meestal zo\'n 10 minuten. Je krijgt dan een nieuwe link; de oude klantpagina gaat offline.',
+          soort === 'verwijder' ? 'Ja, offline halen' : 'Ja, opnieuw checken');
+        if (!ok) return;
+        noot.hidden = false; noot.textContent = 'Doorgeven aan je bot…';
+        if (soort === 'verwijder' && direct) { try { offline = await trekIn(s.klantlink_intrek); } catch (e) {} if (offline) toonOffline(); }
+        try {
+          await stuurActie(soort, s.id);
+          noot.textContent = offline ? '✓ De klantpagina is offline. Je bot ruimt hem binnen een paar minuten ook helemaal op.'
+            : '✓ Doorgegeven aan je bot. ' + (soort === 'verwijder' ? 'Binnen een paar minuten is de klantpagina offline.' : 'Over ongeveer 10 minuten heb je de nieuwe link in je mail.');
+        } catch (e) {
+          noot.innerHTML = offline ? '✓ De klantpagina is offline. Alleen het opruimen door je bot lukte nu niet; de pagina blijft wel offline.'
+            : 'Doorgeven lukte niet. Probeer het zo nog eens, of mail <b>' + esc(CONFIG.bot) + '</b> met als onderwerp <b>Websitecheck-actie: ' + esc(soort + ' ' + s.id) + '</b>.';
+        }
+      });
+    });
+    $('wisknop').onclick = function () { $('detail').classList.add('verborgen'); wissen(s.id); };
+  }
+
+  // uit het overzicht verwijderen (vegen of de knop): meteen uit beeld, klantpagina offline, opdracht "wissen" aan de bot
+  function wegLijst() { try { return JSON.parse(localStorage.getItem('ais-dashboard-weg') || '{}'); } catch (e) { return {}; } }
+  function bewaarWeg(w) { try { localStorage.setItem('ais-dashboard-weg', JSON.stringify(w)); } catch (e) {} }
+  function zonderWeg(alle) {
+    var w = wegLijst(), nog = {}, ids = {};
+    alle.forEach(function (c) { ids[c.id] = 1; });
+    Object.keys(w).forEach(function (id) { if (ids[id] && Date.now() - w[id] < 7 * 864e5) nog[id] = w[id]; });
+    bewaarWeg(nog);
+    return alle.filter(function (c) { return !nog[c.id] && c.bron === 'ais'; });   // nooit iets anders dan AIS
+  }
+  async function wissen(id) {
+    if (CONFIG.test) { sluitVeeg(); toast('Verwijderen staat uit in de lokale test.'); return; }
+    var c = data.find(function (x) { return x.id === id; }); if (!c) return;
+    var naam = c.bedrijf || c.host;
+    var ok = await bevestig('Verwijderen uit je dashboard?', naam + ' verdwijnt uit je overzicht' + (c.klantlink ? ', en de klantpagina gaat offline. Een link die je al hebt verstuurd, werkt dan niet meer.' : '.') + ' Het rapport blijft bewaard bij je bot.', 'Ja, verwijderen');
+    if (!ok) { sluitVeeg(); return; }
+    var w = wegLijst(); w[id] = Date.now(); bewaarWeg(w);
+    data = data.filter(function (x) { return x.id !== id; }); toonAlles();
+    if (c.klantlink_intrek) trekIn(c.klantlink_intrek).catch(function () {});
+    try { await stuurActie('wissen', id); toast('Verwijderd. Je bot haalt hem binnen een paar minuten ook uit de lijst.'); }
+    catch (e) { toast('Uit beeld gehaald, maar doorgeven aan je bot lukte niet. Zeg “wis ' + naam + '” tegen de bot in Grok.'); }
+  }
+  var veeg = null, BREED = 110;
+  function zetVeeg(k, x, anim) {
+    k.style.transition = anim ? 'transform .22s ease' : 'none'; k.style.transform = x ? 'translateX(' + x + 'px)' : '';
+    if (x) { k.parentNode.classList.add('bezig'); } else { setTimeout(function () { if (!k.style.transform) k.parentNode.classList.remove('bezig'); }, anim ? 230 : 0); }
+  }
+  function sluitVeeg(behalve) { document.querySelectorAll('#lijst .kaart.open').forEach(function (k) { if (k !== behalve) { k.classList.remove('open'); zetVeeg(k, 0, true); } }); }
+  $('lijst').addEventListener('touchstart', function (e) {
+    var k = e.target.closest('.kaart'); if (!k) return;
+    var t = e.touches[0];
+    veeg = { k: k, x0: t.clientX, y0: t.clientY, dx: 0, richting: null, start: k.classList.contains('open') ? -BREED : 0 };
+    sluitVeeg(k);
+  }, { passive: true });
+  $('lijst').addEventListener('touchmove', function (e) {
+    if (!veeg) return;
+    var t = e.touches[0], dx = t.clientX - veeg.x0, dy = t.clientY - veeg.y0;
+    if (!veeg.richting) { if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return; veeg.richting = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y'; }
+    if (veeg.richting !== 'x') return;
+    e.preventDefault();
+    veeg.dx = dx; zetVeeg(veeg.k, Math.max(-BREED * 1.3, Math.min(0, veeg.start + dx)), false);
+  }, { passive: false });
+  $('lijst').addEventListener('touchend', function () {
+    if (!veeg) return;
+    var k = veeg.k;
+    if (veeg.richting === 'x') {
+      var open = veeg.start + veeg.dx < -BREED / 2;
+      k.classList.toggle('open', open); zetVeeg(k, open ? -BREED : 0, true);
+      k.dataset.geveegd = '1'; setTimeout(function () { delete k.dataset.geveegd; }, 400);
+    }
+    veeg = null;
+  });
+
+  // ---- B. aanvragen per maand: één reeks (website-checks), staafgrafiek over de laatste 12 maanden ------------------
+  function perMaand() {
+    var nu = new Date(), maanden = [];
+    for (var i = 11; i >= 0; i--) { var d = new Date(nu.getFullYear(), nu.getMonth() - i, 1); maanden.push({ sleutel: d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2), label: MAANDEN[d.getMonth()], jaar: d.getFullYear(), n: 0, verstuurd: 0 }); }
+    data.forEach(function (c) { var m = maanden.find(function (x) { return x.sleutel === (c.datum || '').slice(0, 7); }); if (m) { m.n++; if (c.verstuurd) m.verstuurd++; } });
+    return maanden;
+  }
+  function staafgrafiek(reeks, titel, sub, eenheid) {
+    var B = 640, H = 220, L = 34, R = 8, T = 18, O = 26, max = Math.max(4, Math.max.apply(null, reeks.map(function (r) { return r.n; })));
+    var stap = Math.ceil(max / 4), top = stap * 4, w = (B - L - R) / reeks.length, bw = Math.max(6, Math.min(22, w * 0.46));
+    var y = function (v) { return T + (H - T - O) * (1 - v / top); };
+    var svg = '<svg viewBox="0 0 ' + B + ' ' + H + '" role="img" aria-label="' + esc(titel) + '">';
+    for (var g = 0; g <= 4; g++) { var gv = stap * g; svg += '<line class="raster" x1="' + L + '" x2="' + (B - R) + '" y1="' + y(gv) + '" y2="' + y(gv) + '"/><text class="as" x="' + (L - 8) + '" y="' + (y(gv) + 4) + '" text-anchor="end">' + gv + '</text>'; }
+    reeks.forEach(function (r, i) {
+      var cx = L + w * i + w / 2, x = cx - bw / 2, hgt = Math.max(0, y(0) - y(r.n)), rad = Math.min(4, hgt / 2, bw / 2), y0 = y(0), nu = i === reeks.length - 1;
+      // staaf met ronde bovenkant (4px), vast op de basislijn
+      var pad = hgt > 0 ? 'M' + x + ',' + y0 + 'V' + (y0 - hgt + rad) + 'Q' + x + ',' + (y0 - hgt) + ' ' + (x + rad) + ',' + (y0 - hgt) + 'H' + (x + bw - rad) + 'Q' + (x + bw) + ',' + (y0 - hgt) + ' ' + (x + bw) + ',' + (y0 - hgt + rad) + 'V' + y0 + 'Z' : '';
+      svg += '<g class="st" data-tip="' + esc(r.label + ' ' + r.jaar + ': ' + r.n + ' ' + eenheid) + '" data-x="' + cx + '" data-y="' + (y0 - hgt) + '">' +
+        '<rect class="vang" x="' + (L + w * i) + '" y="' + T + '" width="' + w + '" height="' + (H - T - O) + '"/>' + (pad ? '<path class="staaf' + (nu ? ' nu' : '') + '" d="' + pad + '"/>' : '') + '</g>' +
+        '<text class="as" x="' + cx + '" y="' + (H - 8) + '" text-anchor="middle">' + r.label + '</text>';
+      if (r.n && (nu || r.n === Math.max.apply(null, reeks.map(function (q) { return q.n; })))) svg += '<text class="waarde" x="' + cx + '" y="' + (y0 - hgt - 6) + '" text-anchor="middle">' + r.n + '</text>';   // alleen deze maand en het hoogste punt
+    });
+    svg += '</svg>';
+    var tabel = '<details class="tabel"><summary>Toon als tabel</summary><table><thead><tr><th>Maand</th><th class="n">Website-checks</th><th class="n">Verstuurd</th></tr></thead><tbody>' +
+      reeks.slice().reverse().map(function (r) { return '<tr><td>' + r.label + ' ' + r.jaar + '</td><td class="n">' + r.n + '</td><td class="n">' + r.verstuurd + '</td></tr>'; }).join('') + '</tbody></table></details>';
+    return '<h3>' + esc(titel) + '</h3><div class="gsub">' + esc(sub) + '</div>' + svg + tabel;
+  }
+  function toonMaand() {
+    var m = perMaand(), deze = m[m.length - 1], vorige = m[m.length - 2], som = m.reduce(function (s, r) { return s + r.n; }, 0);
+    var actief = m.filter(function (r) { return r.n; }).length;
+    $('mkpis').innerHTML = [[deze.n, 'deze maand'], [vorige.n, 'vorige maand'], [som, 'laatste 12 maanden'], [actief ? (som / actief).toFixed(1).replace('.', ',').replace(',0', '') : '–', 'gemiddeld per maand*']]
+      .map(function (k) { return '<div class="kpi"><b>' + k[0] + '</b><span>' + k[1] + '</span></div>'; }).join('');
+    $('mgrafiek').innerHTML = staafgrafiek(m, 'Website-checks per maand', '* gemiddelde over de maanden waarin er minstens één check was', 'checks');
+    hoverTip($('mgrafiek'));
+  }
+  function hoverTip(doos) {
+    var tip = document.createElement('div'); tip.className = 'tip verborgen'; doos.appendChild(tip);
+    var svg = doos.querySelector('svg');
+    doos.querySelectorAll('g.st').forEach(function (g) {
+      g.addEventListener('mouseenter', function () {
+        var r = svg.getBoundingClientRect(), d = doos.getBoundingClientRect(), sx = r.width / svg.viewBox.baseVal.width;
+        tip.textContent = g.dataset.tip; tip.classList.remove('verborgen');
+        tip.style.left = (r.left - d.left + g.dataset.x * sx) + 'px'; tip.style.top = (r.top - d.top + g.dataset.y * sx - 4) + 'px';
+      });
+      g.addEventListener('mouseleave', function () { tip.classList.add('verborgen'); });
+    });
+  }
+
+  // ---- C. Search Console: rechtstreeks bij Google, na "Koppel Google" (geen opgeslagen sleutel) ----------------------
+  var scToken = null, scSite = null;
+  function toonSc() {
+    if (!CONFIG.googleClientId) {
+      $('sc').innerHTML = '<h2 class="kop2">Search <em>Console</em></h2><p class="sub">Hoe vaak ais-groep.nl in Google verschijnt en hoe vaak er op geklikt wordt, met de zoekwoorden en pagina\'s erbij. Dit haalt het dashboard rechtstreeks bij Google op, nadat je zelf inlogt. Er wordt nergens een sleutel opgeslagen.</p>' +
+        '<div class="blok"><h4>Nog niet gekoppeld</h4><p style="font-size:14.5px">Eenmalig instellen (ongeveer 10 minuten):</p><ol class="stappen">' +
+        '<li>Controleer in <a href="https://search.google.com/search-console" target="_blank" rel="noopener">Google Search Console</a> of er een property is voor <b>ais-groep.nl</b> en of jouw Google-account erbij kan. Zo niet: voeg hem toe als <b>Domein</b>-property en bevestig met de DNS-regel bij 123-webhost.</li>' +
+        '<li>Maak in <a href="https://console.cloud.google.com/" target="_blank" rel="noopener">Google Cloud</a> een project (bijvoorbeeld "AIS Dashboard") en zet de <b>Google Search Console API</b> aan.</li>' +
+        '<li>Maak onder <b>APIs en services → Inloggegevens</b> een <b>OAuth-client-ID</b> van het type <b>Webapplicatie</b>. Zet bij geautoriseerde JavaScript-oorsprongen: <code>https://rapport.ais-groep.nl</code> en voor de test <code>http://localhost:8816</code>. Stel het toestemmingsscherm in op <b>Extern</b>, in testmodus, met jouw adres als testgebruiker.</li>' +
+        '<li>Geef mij de client-ID (een lange code die eindigt op <code>.apps.googleusercontent.com</code>). Dat is geen geheim; ik zet hem in het dashboard. Daarna verschijnt hier de knop <b>Koppel Google</b>.</li></ol></div>' +
+        '<p class="later">Later mogelijk: bezoekers en formulieren van de nieuwe site via Matomo.</p>';
+      return;
+    }
+    if (!scToken) {
+      $('sc').innerHTML = '<h2 class="kop2">Search <em>Console</em></h2><p class="sub">Klik op de knop en log in met het Google-account dat bij de Search Console van ais-groep.nl kan. Het dashboard leest alleen; er wordt niets opgeslagen.</p><button class="knop" id="scknop" type="button">Koppel Google</button>';
+      $('scknop').onclick = koppelGoogle;
+      return;
+    }
+    laadSc();
+  }
+  function laadScript(src) { return new Promise(function (klaar, mis) { var s = document.createElement('script'); s.src = src; s.async = true; s.onload = klaar; s.onerror = mis; document.head.appendChild(s); }); }
+  async function koppelGoogle() {
+    try {
+      if (!(window.google && google.accounts && google.accounts.oauth2)) await laadScript('https://accounts.google.com/gsi/client');
+      var client = google.accounts.oauth2.initTokenClient({ client_id: CONFIG.googleClientId, scope: 'https://www.googleapis.com/auth/webmasters.readonly',
+        callback: function (r) { if (r.error) { toast('Koppelen lukte niet: ' + r.error); return; } scToken = r.access_token; setTimeout(function () { scToken = null; }, (r.expires_in || 3600) * 1000); laadSc(); } });
+      client.requestAccessToken();
+    } catch (e) { toast('Google kon niet geladen worden. Probeer het zo nog eens.'); }
+  }
+  async function sc(pad, body) {
+    var r = await fetch('https://www.googleapis.com/webmasters/v3/' + pad, { method: body ? 'POST' : 'GET', headers: Object.assign({ Authorization: 'Bearer ' + scToken }, body ? { 'Content-Type': 'application/json' } : {}), body: body ? JSON.stringify(body) : undefined });
+    if (r.status === 401) { scToken = null; throw new Error('opnieuw koppelen'); }
+    if (!r.ok) throw new Error('Google gaf ' + r.status);
+    return r.json();
+  }
+  function dag(d) { return d.toISOString().slice(0, 10); }
+  async function laadSc() {
+    $('sc').innerHTML = '<p class="sub">Search Console laden…</p>';
+    try {
+      if (!scSite) {
+        var sites = ((await sc('sites')).siteEntry || []).map(function (s) { return s.siteUrl; });
+        scSite = sites.find(function (u) { return u === 'sc-domain:ais-groep.nl'; }) || sites.find(function (u) { return /ais-groep\.nl/.test(u); });
+        if (!scSite) { $('sc').innerHTML = '<div class="blok"><h4>Geen property gevonden</h4><p class="uitleg" style="margin-top:0">Dit Google-account heeft geen Search Console-property voor ais-groep.nl. Voeg er een toe (stap 1) of log in met een ander account.</p><div class="rk"><button class="knop licht" id="scknop" type="button">Opnieuw koppelen</button></div></div>'; $('scknop').onclick = function () { scToken = null; koppelGoogle(); }; return; }
+      }
+      // Search Console loopt ongeveer 2 dagen achter: periode = 28 dagen tot en met 3 dagen geleden, vergeleken met de 28 dagen ervoor
+      var eind = new Date(Date.now() - 3 * 864e5), begin = new Date(eind - 27 * 864e5), vEind = new Date(begin - 864e5), vBegin = new Date(vEind - 27 * 864e5);
+      var site = 'sites/' + encodeURIComponent(scSite) + '/searchAnalytics/query';
+      var r = await Promise.all([
+        sc(site, { startDate: dag(begin), endDate: dag(eind), dimensions: ['date'], rowLimit: 100 }),
+        sc(site, { startDate: dag(vBegin), endDate: dag(vEind), rowLimit: 1 }),
+        sc(site, { startDate: dag(begin), endDate: dag(eind), dimensions: ['query'], rowLimit: 10 }),
+        sc(site, { startDate: dag(begin), endDate: dag(eind), dimensions: ['page'], rowLimit: 10 })
+      ]);
+      var dagen = r[0].rows || [], tot = dagen.reduce(function (s, x) { s.k += x.clicks; s.v += x.impressions; s.p += x.position * x.impressions; return s; }, { k: 0, v: 0, p: 0 });
+      var vorig = (r[1].rows || [])[0] || { clicks: 0, impressions: 0 };
+      var verschil = function (a, b) { if (!b) return ''; var p = Math.round((a - b) / b * 100); return ' <small style="color:' + (p >= 0 ? '#2F6B40' : '#9A3322') + '">' + (p >= 0 ? '+' : '') + p + '%</small>'; };
+      $('sc').innerHTML = '<h2 class="kop2">Search <em>Console</em></h2><p class="sub">' + esc(scSite.replace('sc-domain:', '')) + ' · ' + begin.toLocaleDateString('nl-NL') + ' t/m ' + eind.toLocaleDateString('nl-NL') + ', vergeleken met de 28 dagen ervoor. Google loopt ongeveer 2 dagen achter.</p>' +
+        '<div class="kpis">' + [[getal(tot.k) + verschil(tot.k, vorig.clicks), 'klikken'], [getal(tot.v) + verschil(tot.v, vorig.impressions), 'vertoningen'],
+          [tot.v ? (tot.k / tot.v * 100).toFixed(1).replace('.', ',') + '%' : '–', 'klikratio'], [tot.v ? (tot.p / tot.v).toFixed(1).replace('.', ',') : '–', 'gem. positie']]
+          .map(function (k) { return '<div class="kpi"><b>' + k[0] + '</b><span>' + k[1] + '</span></div>'; }).join('') + '</div>' +
+        '<div class="grafiek" id="scklik"></div><div class="grafiek" id="scvert"></div>' +
+        '<div class="grafiek"><h3>Zoekwoorden</h3><div class="gsub">De 10 zoekwoorden met de meeste klikken</div>' + topTabel(r[2].rows || [], 'Zoekwoord', function (k) { return esc(k); }) + '</div>' +
+        '<div class="grafiek"><h3>Pagina\'s</h3><div class="gsub">De 10 pagina\'s met de meeste klikken</div>' + topTabel(r[3].rows || [], 'Pagina', function (k) { return '<a href="' + esc(k) + '" target="_blank" rel="noopener">' + esc(k.replace(/^https?:\/\/(www\.)?ais-groep\.nl/, '') || '/') + '</a>'; }) + '</div>' +
+        '<p class="later">Later mogelijk: bezoekers en formulieren van de nieuwe site via Matomo.</p>';
+      // klikken en vertoningen hebben een heel andere schaal: twee aparte grafieken, nooit één met twee assen
+      var reeks = function (veld) { return dagen.map(function (x) { var d = new Date(x.keys[0]); return { label: d.getDate() + ' ' + MAANDEN[d.getMonth()], jaar: d.getFullYear(), n: x[veld] }; }); };
+      $('scklik').innerHTML = lijngrafiek(reeks('clicks'), 'Klikken per dag', 'Hoe vaak iemand vanuit Google op ais-groep.nl klikte', 'klikken'); hoverTip($('scklik'));
+      $('scvert').innerHTML = lijngrafiek(reeks('impressions'), 'Vertoningen per dag', 'Hoe vaak ais-groep.nl in de zoekresultaten stond', 'vertoningen'); hoverTip($('scvert'));
+    } catch (e) {
+      $('sc').innerHTML = '<div class="blok"><h4>Laden lukte niet</h4><p class="uitleg" style="margin-top:0">' + esc(e.message) + '.</p><div class="rk"><button class="knop" id="scknop" type="button">Koppel Google</button></div></div>';
+      $('scknop').onclick = koppelGoogle;
+    }
+  }
+  function topTabel(rijen, kop, cel) {
+    if (!rijen.length) return '<p class="uitleg">Nog geen gegevens in deze periode.</p>';
+    return '<table class="top"><thead><tr><th>' + kop + '</th><th class="n">Klikken</th><th class="n">Vertoningen</th><th class="n">Positie</th></tr></thead><tbody>' +
+      rijen.map(function (x) { return '<tr><td class="q">' + cel(x.keys[0]) + '</td><td class="n">' + getal(x.clicks) + '</td><td class="n">' + getal(x.impressions) + '</td><td class="n">' + x.position.toFixed(1).replace('.', ',') + '</td></tr>'; }).join('') + '</tbody></table>';
+  }
+  function lijngrafiek(reeks, titel, sub, eenheid) {
+    var B = 640, H = 200, L = 40, R = 8, T = 16, O = 26, max = Math.max(1, Math.max.apply(null, reeks.map(function (r) { return r.n; })));
+    var mag = Math.pow(10, Math.floor(Math.log10(max))), top = Math.ceil(max / mag) * mag, w = reeks.length > 1 ? (B - L - R) / (reeks.length - 1) : 0;
+    var y = function (v) { return T + (H - T - O) * (1 - v / top); }, x = function (i) { return L + w * i; };
+    var svg = '<svg viewBox="0 0 ' + B + ' ' + H + '" role="img" aria-label="' + esc(titel) + '">';
+    for (var g = 0; g <= 4; g++) { var gv = top / 4 * g; svg += '<line class="raster" x1="' + L + '" x2="' + (B - R) + '" y1="' + y(gv) + '" y2="' + y(gv) + '"/><text class="as" x="' + (L - 8) + '" y="' + (y(gv) + 4) + '" text-anchor="end">' + getal(Math.round(gv)) + '</text>'; }
+    svg += '<polyline fill="none" stroke="#0d074f" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" points="' + reeks.map(function (r, i) { return x(i) + ',' + y(r.n); }).join(' ') + '"/>';
+    reeks.forEach(function (r, i) {
+      if (i % 7 === 0 || i === reeks.length - 1) svg += '<text class="as" x="' + x(i) + '" y="' + (H - 8) + '" text-anchor="middle">' + r.label + '</text>';
+      svg += '<g class="st" data-tip="' + esc(r.label + ': ' + getal(r.n) + ' ' + eenheid) + '" data-x="' + x(i) + '" data-y="' + y(r.n) + '"><rect class="vang" x="' + (x(i) - w / 2) + '" y="' + T + '" width="' + Math.max(w, 8) + '" height="' + (H - T - O) + '"/></g>';
+    });
+    svg += '</svg>';
+    var tabel = '<details class="tabel"><summary>Toon als tabel</summary><table><thead><tr><th>Dag</th><th class="n">' + eenheid + '</th></tr></thead><tbody>' +
+      reeks.slice().reverse().map(function (r) { return '<tr><td>' + r.label + '</td><td class="n">' + getal(r.n) + '</td></tr>'; }).join('') + '</tbody></table></details>';
+    return '<h3>' + esc(titel) + '</h3><div class="gsub">' + esc(sub) + '</div>' + svg + tabel;
+  }
+
+  // ---- tabbladen ----------------------------------------------------------------------------------------------------
+  function toonAlles() { toonLijst(); if (tab === 'maand') toonMaand(); }
+  function kiesTab(t) {
+    tab = t;
+    $('tabs').querySelectorAll('button').forEach(function (b) { b.classList.toggle('aan', b.dataset.tab === t); });
+    ['aanvragen', 'maand', 'sc'].forEach(function (n) { $('t-' + n).classList.toggle('verborgen', n !== t); });
+    if (t === 'maand') toonMaand();
+    if (t === 'sc') toonSc();
+    try { sessionStorage.setItem('ais-dashboard-tab', t); } catch (e) {}
+  }
+  $('tabs').addEventListener('click', function (e) { var b = e.target.closest('button[data-tab]'); if (b) kiesTab(b.dataset.tab); });
+
+  // ---- pushmeldingen (eigen AIS-app; aanmelden met een sleutel uit het AIS-wachtwoord) --------------------------------
+  var kanPush = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+  var losseApp = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+  var iOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  var swReg = 'serviceWorker' in navigator ? navigator.serviceWorker.register('sw.js').catch(function () { return null; }) : Promise.resolve(null);
+  function naarBytes(s) { s = s.replace(/-/g, '+').replace(/_/g, '/'); s += '==='.slice((s.length + 3) % 4); return Uint8Array.from(atob(s), function (c) { return c.charCodeAt(0); }); }
+  async function pushSleutel() {
+    var enc = new TextEncoder();
+    var k = await crypto.subtle.importKey('raw', enc.encode(sleutelPw), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+    return hex(await crypto.subtle.sign('HMAC', k, enc.encode('websitecheck-push')));
+  }
+  async function meldStatus() {
+    var knop = $('meld');
+    if (CONFIG.test || !kanPush) { knop.hidden = true; return; }
+    var reg = await swReg, abo = null;
+    try { abo = reg && reg.pushManager ? await reg.pushManager.getSubscription() : null; } catch (e) { abo = null; }
+    var aan = !!abo && Notification.permission === 'granted';
+    knop.hidden = false; knop.classList.toggle('aan', aan); knop.setAttribute('aria-label', aan ? 'Meldingen staan aan' : 'Meldingen aanzetten');
+    knop.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg><span class="mt"> ' + (aan ? 'Meldingen aan' : 'Meldingen aanzetten') + '</span>';
+  }
+  $('meld').onclick = async function () {
+    if (iOS && !losseApp) { await bevestig('Meldingen op je iPhone', 'Zet deze pagina eerst op je beginscherm: tik in Safari op Deel en dan op "Zet op beginscherm". Open daarna de app AIS Dashboard, log in en tik op Meldingen aanzetten.', 'Begrepen', true); return; }
+    if (Notification.permission === 'denied') { await bevestig('Meldingen staan uit', 'Je hebt meldingen voor deze app eerder geweigerd. Zet ze aan in Instellingen, Meldingen, AIS Dashboard, en tik daarna hier opnieuw.', 'Begrepen', true); return; }
+    var knop = this; knop.disabled = true; knop.textContent = 'Bezig…';
+    try {
+      if (await Notification.requestPermission() !== 'granted') throw new Error('geen toestemming gegeven');
+      if (!(await swReg)) throw new Error('de app kon niet starten');
+      var reg = await navigator.serviceWorker.ready;
+      var abo = await reg.pushManager.getSubscription() || await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: naarBytes(CONFIG.vapid) });
+      var r = await fetch(CONFIG.server + '/websitecheck-push.php', { method: 'POST', body: new URLSearchParams({ actie: 'aanmelden', app: 'ais', sleutel: await pushSleutel(), abonnement: JSON.stringify(abo), toestel: (iOS ? 'iPhone' : 'Computer') + (losseApp ? ' (app)' : '') }) });
+      var j = await r.json();
+      if (j.reden === 'nog-niet') { await bevestig('Meldingen kunnen nog niet aan', 'De bot moet eerst het AIS-wachtwoord krijgen. Zodra dat geregeld is, kun je hier meldingen aanzetten.', 'Begrepen', true); knop.disabled = false; meldStatus(); return; }
+      if (!j.ok) throw new Error(j.reden === 'sleutel' ? 'het wachtwoord klopt niet' : 'de server gaf ' + r.status);
+      await bevestig('Meldingen staan aan', 'Je krijgt nu meteen een proefmelding. Daarna hoor je het zodra er via ais-groep.nl een website-check wordt aangevraagd.', 'Top', true);
+    } catch (e) {
+      await bevestig('Dat lukte niet', 'Meldingen aanzetten lukte niet: ' + e.message + '. Probeer het zo nog eens.', 'Oké', true);
+    }
+    knop.disabled = false; meldStatus();
+  };
+
+  // ---- ingelogd blijven (wachtwoord versleuteld in IndexedDB met een niet-exporteerbare sleutel) --------------------
+  function opslag(doe) {
+    return new Promise(function (klaar, mis) {
+      var r = indexedDB.open('ais-dashboard', 1);
+      r.onupgradeneeded = function () { r.result.createObjectStore('kv'); };
+      r.onerror = function () { mis(r.error); };
+      r.onsuccess = function () {
+        var tx = r.result.transaction('kv', 'readwrite'), vraag = doe(tx.objectStore('kv'));
+        tx.oncomplete = function () { r.result.close(); klaar(vraag && vraag.result); };
+        tx.onerror = function () { mis(tx.error); };
+      };
+    });
+  }
+  async function onthoud(pw) {
+    var sleutel = await crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+    var iv = crypto.getRandomValues(new Uint8Array(12));
+    var ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv }, sleutel, new TextEncoder().encode(pw));
+    await opslag(function (st) { st.put({ sleutel: sleutel, iv: iv, ct: ct, sinds: Date.now() }, 'login'); });
+  }
+  async function herinnerd() {
+    var rec = await opslag(function (st) { return st.get('login'); });
+    return rec ? new TextDecoder().decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: rec.iv }, rec.sleutel, rec.ct)) : null;
+  }
+  function vergeet() { return opslag(function (st) { st.delete('login'); }).catch(function () {}); }
+
+  // een tik op een melding opent /#check=<id>: na het inloggen die check openen
+  var teOpenen = (location.hash.match(/^#check=([0-9a-z-]+)$/) || [])[1] || null;
+  function openUitMelding() {
+    if (!teOpenen || !sleutelPw) return;
+    var id = teOpenen; teOpenen = null; history.replaceState(null, '', location.pathname);
+    kiesTab('aanvragen');
+    var er = function () { return data.some(function (c) { return c.id === id; }); };
+    if (er()) { openDetail(id); return; }
+    toast('Rapport wordt geladen…');
+    var poging = 0, probeer = function () { vernieuw(true).then(function () { if (er()) { openDetail(id); return; } if (++poging < 8) setTimeout(probeer, 15000); }); };
+    probeer();
+  }
+  // verversen: bij weer in beeld komen, elke minuut, en na een melding
+  var bezigMet = null, laatstVernieuwd = 0;
+  function zetLijst(lijst) {
+    data = zonderWeg(lijst.checks || []);
+    $('upd').textContent = lijst.bijgewerkt ? 'Bijgewerkt ' + new Date(lijst.bijgewerkt).toLocaleString('nl-NL', { dateStyle: 'medium', timeStyle: 'short' }) : '';
+    toonAlles();
+  }
+  function vernieuw(dwing) {
+    if (!sleutelPw) return Promise.resolve();
+    if (bezigMet) return bezigMet;
+    if (!dwing && Date.now() - laatstVernieuwd < 15000) return Promise.resolve();
+    bezigMet = haal(CONFIG.bron + 'lijst.enc').then(function (enc) { return ontsleutel(enc, sleutelPw); }).then(function (lijst) { laatstVernieuwd = Date.now(); zetLijst(lijst); })
+      .catch(function () {}).then(function () { bezigMet = null; });
+    return bezigMet;
+  }
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') { vernieuw(); getalWeg(); } });
+  window.addEventListener('pageshow', function (e) { if (e.persisted) vernieuw(true); });
+  setInterval(function () { if (document.visibilityState === 'visible') vernieuw(); }, 60000);
+  if (navigator.serviceWorker) navigator.serviceWorker.addEventListener('message', function (e) {
+    if (!e.data) return;
+    if (e.data.open) { teOpenen = e.data.open; openUitMelding(); return; }
+    if (e.data.vernieuw) { vernieuw(true); [30000, 75000, 150000].forEach(function (ms) { setTimeout(function () { vernieuw(true); }, ms); }); }
+  });
+  function getalWeg() {
+    if (navigator.clearAppBadge) navigator.clearAppBadge().catch(function () {});
+    if (window.indexedDB) opslag(function (st) { st.put(0, 'badge'); }).catch(function () {});
+  }
+  getalWeg();
+
+  async function inloggen(pw) {
+    var lijst;
+    lijst = await ontsleutel(await haal(CONFIG.bron + 'lijst.enc'), pw);   // 'leeg' = de bot heeft de AIS-gegevens nog niet aangemaakt
+    sleutelPw = pw; laatstVernieuwd = Date.now(); zetLijst(lijst);
+    $('testbalk').classList.toggle('verborgen', !(CONFIG.test || lijst.test));
+    $('login').classList.add('verborgen'); $('app').classList.remove('verborgen'); $('pw').value = ''; $('lfout').textContent = '';
+    var bewaard = null; try { bewaard = sessionStorage.getItem('ais-dashboard-tab'); } catch (e) {}
+    kiesTab(bewaard || 'aanvragen'); meldStatus(); openUitMelding();
+  }
+  $('onthoud').checked = losseApp;
+  $('lform').addEventListener('submit', async function (e) {
+    e.preventDefault(); $('lfout').textContent = 'Openen…';
+    var pw = $('pw').value, blijf = $('onthoud').checked;
+    try { await inloggen(pw); } catch (err) { $('lfout').textContent = err && err.message === 'leeg' ? 'De AIS-gegevens staan nog niet klaar bij de bot. Zodra ze er zijn, kun je hier inloggen.' : err && err.message === 'fout' ? 'De gegevens konden niet geladen worden. Probeer het zo nog eens.' : 'Dat wachtwoord klopt niet.'; return; }
+    if (blijf) { onthoud(pw).catch(function () {}); } else { vergeet(); }
+  });
+  if (window.indexedDB) {
+    herinnerd().then(function (pw) {
+      if (!pw) return;
+      $('lfout').textContent = 'Openen…';
+      return inloggen(pw).catch(function (err) { $('lfout').textContent = ''; if (err && err.name === 'OperationError') vergeet(); });
+    }).catch(function () { vergeet(); });
+  }
+  $('uit').onclick = function () { vergeet(); sleutelPw = null; data = []; scToken = null; scSite = null; $('app').classList.add('verborgen'); $('login').classList.remove('verborgen'); $('lijst').innerHTML = ''; $('lfout').textContent = ''; };
+  $('q').addEventListener('input', toonLijst);
+  $('fstat').addEventListener('click', function (e) { var b = e.target.closest('button'); if (!b) return; fstat = b.dataset.v; this.querySelectorAll('button').forEach(function (x) { x.classList.toggle('aan', x === b); }); toonLijst(); });
+
+  document.addEventListener('click', function (e) {
+    var wis = e.target.closest('[data-wis]'); if (wis) { e.stopPropagation(); wissen(wis.dataset.wis); return; }
+    var kv = e.target.closest('#lijst .kaart');
+    if (kv && (kv.dataset.geveegd || kv.classList.contains('open'))) { sluitVeeg(); return; }
+    if (!kv) sluitVeeg();
+    var p = e.target.closest('[data-pdf]'); if (p) { e.stopPropagation(); openPdf(p.dataset.pdf); return; }
+    var o = e.target.closest('[data-open], .kaart'); if (o && !e.target.closest('#paneel')) { openDetail(o.dataset.open || o.dataset.id); }
+  });
+  $('detail').addEventListener('click', function (e) { if (e.target === this) this.classList.add('verborgen'); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') $('detail').classList.add('verborgen'); });
+})();
+</script>
+</body>
+</html>
