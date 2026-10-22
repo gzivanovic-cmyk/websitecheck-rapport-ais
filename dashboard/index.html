@@ -17,9 +17,8 @@
 <meta name="theme-color" content="#FFFFFF">
 <link rel="preload" href="assets/onest-latin.woff2" as="font" type="font/woff2" crossorigin>
 <style>
-/* AIS-dashboard: alleen voor Goran. A = website-check-aanvragen (versleuteld, van de bot), B = aanvragen per maand,
-   C = Search Console (rechtstreeks via Google, na "Koppel Google"). Zelfde werking als het overzicht van de websitechecks,
-   maar alleen AIS en in de AIS-huisstijl. De gegevens worden in de browser ontsleuteld met het wachtwoord. */
+/* AIS-dashboard: alleen voor Goran. A = website-check-aanvragen (versleuteld, van de bot), B = aanvragen per maand.
+   Zelfde werking als het overzicht van de websitechecks, maar alleen AIS en in de AIS-huisstijl. De gegevens worden in de browser ontsleuteld met het wachtwoord. */
 @font-face { font-family: 'Onest'; src: url(assets/onest-latin.woff2) format('woff2'); font-weight: 400 800; font-display: swap; }
 @font-face { font-family: 'Instrument Serif'; src: url(assets/instrument-serif-italic-latin.woff2) format('woff2'); font-style: italic; font-display: swap; }
 :root { --navy: #0d074f; --navy-2: #17106a; --ink: #15123a; --ink-2: #3d3a5c; --muted: #6b6889; --line: #e3e1e9; --soft: #f4f5fa; --card: #fff; --bg: #fff;
@@ -144,16 +143,6 @@ details.tabel summary { cursor: pointer; color: var(--muted); font-size: 12.5px;
 details.tabel table { width: 100%; border-collapse: collapse; }
 details.tabel th, details.tabel td { text-align: left; padding: 5px 6px; border-top: 1px solid var(--line); }
 details.tabel td.n, details.tabel th.n { text-align: right; font-variant-numeric: tabular-nums; }
-.stappen { list-style: none; counter-reset: s; display: grid; gap: 12px; margin: 14px 0 6px; }
-.stappen li { counter-increment: s; position: relative; padding-left: 38px; font-size: 14.5px; }
-.stappen li::before { content: counter(s); position: absolute; left: 0; top: -2px; width: 26px; height: 26px; border-radius: 50%; background: var(--navy); color: #fff; font-size: 13px; font-weight: 700; display: grid; place-items: center; }
-.stappen code { background: var(--soft); border: 1px solid var(--line); border-radius: 6px; padding: 1px 6px; font-size: 12.5px; }
-.later { color: var(--muted); font-size: 13.5px; border: 1px dashed var(--line); border-radius: 16px; padding: 14px 16px; }
-table.top { width: 100%; border-collapse: collapse; font-size: 13.5px; }
-table.top th, table.top td { text-align: left; padding: 7px 6px; border-top: 1px solid var(--line); }
-table.top th { font-size: 11.5px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); border-top: 0; }
-table.top td.n, table.top th.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
-table.top td.q { word-break: break-word; }
 @media (max-width: 640px) {
   .hin .upd { display: none; } .hin h1 { font-size: 15px; margin-right: auto; } .hin .ib .mt { display: none; } .hin .ib { padding: 7px 10px; } #meld { margin-left: auto; }
   .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -168,7 +157,7 @@ table.top td.q { word-break: break-word; }
 <div id="login"><form class="lbox" id="lform">
   <img src="assets/ais-logo.png" alt="AIS-Groep" width="64" height="64">
   <h1>AIS <em>Dashboard</em></h1>
-  <p>Website-checks, aanvragen per maand en Search Console. Alleen voor Goran.</p>
+  <p>Website-checks en aanvragen per maand. Alleen voor Goran.</p>
   <label class="verborgen" for="pw">Wachtwoord</label>
   <input id="pw" type="password" autocomplete="current-password" placeholder="Wachtwoord" required>
   <label class="onthoud"><input type="checkbox" id="onthoud"> Ingelogd blijven op dit toestel</label>
@@ -182,7 +171,7 @@ table.top td.q { word-break: break-word; }
     <div class="hin"><img src="assets/ais-logo.png" alt="AIS-Groep" width="38" height="38"><h1>Dashboard</h1><span class="upd" id="upd"></span>
       <button class="ib" id="meld" type="button" hidden>Meldingen aanzetten</button>
       <button class="ib" id="uit" aria-label="Uitloggen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg><span class="mt"> Uitloggen</span></button></div>
-    <nav class="tabs" id="tabs" aria-label="Onderdelen"><button data-tab="aanvragen" class="aan">Website-checks</button><button data-tab="maand">Per maand</button><button data-tab="sc">Search Console</button></nav>
+    <nav class="tabs" id="tabs" aria-label="Onderdelen"><button data-tab="aanvragen" class="aan">Website-checks</button><button data-tab="maand">Per maand</button></nav>
   </header>
   <main>
     <div class="testbalk verborgen" id="testbalk">Lokale test met <b>testgegevens</b> (echte checks van deze Mac, niet van de bot). Meldingen en de knoppen offline halen, opnieuw checken en verwijderen staan uit tot de echte AIS-gegevens er zijn.</div>
@@ -203,7 +192,6 @@ table.top td.q { word-break: break-word; }
       <div class="grafiek" id="mgrafiek"></div>
     </section>
 
-    <section id="t-sc" class="verborgen"><div id="sc"></div></section>
   </main>
 </div>
 
@@ -220,9 +208,7 @@ table.top td.q { word-break: break-word; }
     // server voor meldingen en acties (CORS voor rapport.ais-groep.nl); app=ais
     server: 'https://www.go4itstudio.com',
     vapid: 'BBgmOSuZO2k5gi-LmZb8IyHE6hJbJgieE-G7U84VSFvx4-wiWLUxw_ob8o8F_4oZRKajjGkY-c_Xi4BoC7SBNXw',
-    bot: 'g.zivanovic@mail.grokbot.com',
-    // Search Console: OAuth-client-ID uit Google Cloud (Goran maakt hem zelf aan; zie de stappen in het tabblad). Leeg = nog niet gekoppeld.
-    googleClientId: ''
+    bot: 'g.zivanovic@mail.grokbot.com'
   };
 
   var sleutelPw = null, data = [], fstat = 'alle', tab = 'aanvragen';
@@ -612,109 +598,13 @@ table.top td.q { word-break: break-word; }
     });
   }
 
-  // ---- C. Search Console: rechtstreeks bij Google, na "Koppel Google" (geen opgeslagen sleutel) ----------------------
-  var scToken = null, scSite = null;
-  function toonSc() {
-    if (!CONFIG.googleClientId) {
-      $('sc').innerHTML = '<h2 class="kop2">Search <em>Console</em></h2><p class="sub">Hoe vaak ais-groep.nl in Google verschijnt en hoe vaak er op geklikt wordt, met de zoekwoorden en pagina\'s erbij. Dit haalt het dashboard rechtstreeks bij Google op, nadat je zelf inlogt. Er wordt nergens een sleutel opgeslagen.</p>' +
-        '<div class="blok"><h4>Nog niet gekoppeld</h4><p style="font-size:14.5px">Eenmalig instellen (ongeveer 10 minuten):</p><ol class="stappen">' +
-        '<li>Controleer in <a href="https://search.google.com/search-console" target="_blank" rel="noopener">Google Search Console</a> of er een property is voor <b>ais-groep.nl</b> en of jouw Google-account erbij kan. Zo niet: voeg hem toe als <b>Domein</b>-property en bevestig met de DNS-regel bij 123-webhost.</li>' +
-        '<li>Maak in <a href="https://console.cloud.google.com/" target="_blank" rel="noopener">Google Cloud</a> een project (bijvoorbeeld "AIS Dashboard") en zet de <b>Google Search Console API</b> aan.</li>' +
-        '<li>Maak onder <b>APIs en services → Inloggegevens</b> een <b>OAuth-client-ID</b> van het type <b>Webapplicatie</b>. Zet bij geautoriseerde JavaScript-oorsprongen: <code>https://rapport.ais-groep.nl</code> en voor de test <code>http://localhost:8816</code>. Stel het toestemmingsscherm in op <b>Extern</b>, in testmodus, met jouw adres als testgebruiker.</li>' +
-        '<li>Geef mij de client-ID (een lange code die eindigt op <code>.apps.googleusercontent.com</code>). Dat is geen geheim; ik zet hem in het dashboard. Daarna verschijnt hier de knop <b>Koppel Google</b>.</li></ol></div>' +
-        '<p class="later">Later mogelijk: bezoekers en formulieren van de nieuwe site via Matomo.</p>';
-      return;
-    }
-    if (!scToken) {
-      $('sc').innerHTML = '<h2 class="kop2">Search <em>Console</em></h2><p class="sub">Klik op de knop en log in met het Google-account dat bij de Search Console van ais-groep.nl kan. Het dashboard leest alleen; er wordt niets opgeslagen.</p><button class="knop" id="scknop" type="button">Koppel Google</button>';
-      $('scknop').onclick = koppelGoogle;
-      return;
-    }
-    laadSc();
-  }
-  function laadScript(src) { return new Promise(function (klaar, mis) { var s = document.createElement('script'); s.src = src; s.async = true; s.onload = klaar; s.onerror = mis; document.head.appendChild(s); }); }
-  async function koppelGoogle() {
-    try {
-      if (!(window.google && google.accounts && google.accounts.oauth2)) await laadScript('https://accounts.google.com/gsi/client');
-      var client = google.accounts.oauth2.initTokenClient({ client_id: CONFIG.googleClientId, scope: 'https://www.googleapis.com/auth/webmasters.readonly',
-        callback: function (r) { if (r.error) { toast('Koppelen lukte niet: ' + r.error); return; } scToken = r.access_token; setTimeout(function () { scToken = null; }, (r.expires_in || 3600) * 1000); laadSc(); } });
-      client.requestAccessToken();
-    } catch (e) { toast('Google kon niet geladen worden. Probeer het zo nog eens.'); }
-  }
-  async function sc(pad, body) {
-    var r = await fetch('https://www.googleapis.com/webmasters/v3/' + pad, { method: body ? 'POST' : 'GET', headers: Object.assign({ Authorization: 'Bearer ' + scToken }, body ? { 'Content-Type': 'application/json' } : {}), body: body ? JSON.stringify(body) : undefined });
-    if (r.status === 401) { scToken = null; throw new Error('opnieuw koppelen'); }
-    if (!r.ok) throw new Error('Google gaf ' + r.status);
-    return r.json();
-  }
-  function dag(d) { return d.toISOString().slice(0, 10); }
-  async function laadSc() {
-    $('sc').innerHTML = '<p class="sub">Search Console laden…</p>';
-    try {
-      if (!scSite) {
-        var sites = ((await sc('sites')).siteEntry || []).map(function (s) { return s.siteUrl; });
-        scSite = sites.find(function (u) { return u === 'sc-domain:ais-groep.nl'; }) || sites.find(function (u) { return /ais-groep\.nl/.test(u); });
-        if (!scSite) { $('sc').innerHTML = '<div class="blok"><h4>Geen property gevonden</h4><p class="uitleg" style="margin-top:0">Dit Google-account heeft geen Search Console-property voor ais-groep.nl. Voeg er een toe (stap 1) of log in met een ander account.</p><div class="rk"><button class="knop licht" id="scknop" type="button">Opnieuw koppelen</button></div></div>'; $('scknop').onclick = function () { scToken = null; koppelGoogle(); }; return; }
-      }
-      // Search Console loopt ongeveer 2 dagen achter: periode = 28 dagen tot en met 3 dagen geleden, vergeleken met de 28 dagen ervoor
-      var eind = new Date(Date.now() - 3 * 864e5), begin = new Date(eind - 27 * 864e5), vEind = new Date(begin - 864e5), vBegin = new Date(vEind - 27 * 864e5);
-      var site = 'sites/' + encodeURIComponent(scSite) + '/searchAnalytics/query';
-      var r = await Promise.all([
-        sc(site, { startDate: dag(begin), endDate: dag(eind), dimensions: ['date'], rowLimit: 100 }),
-        sc(site, { startDate: dag(vBegin), endDate: dag(vEind), rowLimit: 1 }),
-        sc(site, { startDate: dag(begin), endDate: dag(eind), dimensions: ['query'], rowLimit: 10 }),
-        sc(site, { startDate: dag(begin), endDate: dag(eind), dimensions: ['page'], rowLimit: 10 })
-      ]);
-      var dagen = r[0].rows || [], tot = dagen.reduce(function (s, x) { s.k += x.clicks; s.v += x.impressions; s.p += x.position * x.impressions; return s; }, { k: 0, v: 0, p: 0 });
-      var vorig = (r[1].rows || [])[0] || { clicks: 0, impressions: 0 };
-      var verschil = function (a, b) { if (!b) return ''; var p = Math.round((a - b) / b * 100); return ' <small style="color:' + (p >= 0 ? '#2F6B40' : '#9A3322') + '">' + (p >= 0 ? '+' : '') + p + '%</small>'; };
-      $('sc').innerHTML = '<h2 class="kop2">Search <em>Console</em></h2><p class="sub">' + esc(scSite.replace('sc-domain:', '')) + ' · ' + begin.toLocaleDateString('nl-NL') + ' t/m ' + eind.toLocaleDateString('nl-NL') + ', vergeleken met de 28 dagen ervoor. Google loopt ongeveer 2 dagen achter.</p>' +
-        '<div class="kpis">' + [[getal(tot.k) + verschil(tot.k, vorig.clicks), 'klikken'], [getal(tot.v) + verschil(tot.v, vorig.impressions), 'vertoningen'],
-          [tot.v ? (tot.k / tot.v * 100).toFixed(1).replace('.', ',') + '%' : '–', 'klikratio'], [tot.v ? (tot.p / tot.v).toFixed(1).replace('.', ',') : '–', 'gem. positie']]
-          .map(function (k) { return '<div class="kpi"><b>' + k[0] + '</b><span>' + k[1] + '</span></div>'; }).join('') + '</div>' +
-        '<div class="grafiek" id="scklik"></div><div class="grafiek" id="scvert"></div>' +
-        '<div class="grafiek"><h3>Zoekwoorden</h3><div class="gsub">De 10 zoekwoorden met de meeste klikken</div>' + topTabel(r[2].rows || [], 'Zoekwoord', function (k) { return esc(k); }) + '</div>' +
-        '<div class="grafiek"><h3>Pagina\'s</h3><div class="gsub">De 10 pagina\'s met de meeste klikken</div>' + topTabel(r[3].rows || [], 'Pagina', function (k) { return '<a href="' + esc(k) + '" target="_blank" rel="noopener">' + esc(k.replace(/^https?:\/\/(www\.)?ais-groep\.nl/, '') || '/') + '</a>'; }) + '</div>' +
-        '<p class="later">Later mogelijk: bezoekers en formulieren van de nieuwe site via Matomo.</p>';
-      // klikken en vertoningen hebben een heel andere schaal: twee aparte grafieken, nooit één met twee assen
-      var reeks = function (veld) { return dagen.map(function (x) { var d = new Date(x.keys[0]); return { label: d.getDate() + ' ' + MAANDEN[d.getMonth()], jaar: d.getFullYear(), n: x[veld] }; }); };
-      $('scklik').innerHTML = lijngrafiek(reeks('clicks'), 'Klikken per dag', 'Hoe vaak iemand vanuit Google op ais-groep.nl klikte', 'klikken'); hoverTip($('scklik'));
-      $('scvert').innerHTML = lijngrafiek(reeks('impressions'), 'Vertoningen per dag', 'Hoe vaak ais-groep.nl in de zoekresultaten stond', 'vertoningen'); hoverTip($('scvert'));
-    } catch (e) {
-      $('sc').innerHTML = '<div class="blok"><h4>Laden lukte niet</h4><p class="uitleg" style="margin-top:0">' + esc(e.message) + '.</p><div class="rk"><button class="knop" id="scknop" type="button">Koppel Google</button></div></div>';
-      $('scknop').onclick = koppelGoogle;
-    }
-  }
-  function topTabel(rijen, kop, cel) {
-    if (!rijen.length) return '<p class="uitleg">Nog geen gegevens in deze periode.</p>';
-    return '<table class="top"><thead><tr><th>' + kop + '</th><th class="n">Klikken</th><th class="n">Vertoningen</th><th class="n">Positie</th></tr></thead><tbody>' +
-      rijen.map(function (x) { return '<tr><td class="q">' + cel(x.keys[0]) + '</td><td class="n">' + getal(x.clicks) + '</td><td class="n">' + getal(x.impressions) + '</td><td class="n">' + x.position.toFixed(1).replace('.', ',') + '</td></tr>'; }).join('') + '</tbody></table>';
-  }
-  function lijngrafiek(reeks, titel, sub, eenheid) {
-    var B = 640, H = 200, L = 40, R = 8, T = 16, O = 26, max = Math.max(1, Math.max.apply(null, reeks.map(function (r) { return r.n; })));
-    var mag = Math.pow(10, Math.floor(Math.log10(max))), top = Math.ceil(max / mag) * mag, w = reeks.length > 1 ? (B - L - R) / (reeks.length - 1) : 0;
-    var y = function (v) { return T + (H - T - O) * (1 - v / top); }, x = function (i) { return L + w * i; };
-    var svg = '<svg viewBox="0 0 ' + B + ' ' + H + '" role="img" aria-label="' + esc(titel) + '">';
-    for (var g = 0; g <= 4; g++) { var gv = top / 4 * g; svg += '<line class="raster" x1="' + L + '" x2="' + (B - R) + '" y1="' + y(gv) + '" y2="' + y(gv) + '"/><text class="as" x="' + (L - 8) + '" y="' + (y(gv) + 4) + '" text-anchor="end">' + getal(Math.round(gv)) + '</text>'; }
-    svg += '<polyline fill="none" stroke="#0d074f" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" points="' + reeks.map(function (r, i) { return x(i) + ',' + y(r.n); }).join(' ') + '"/>';
-    reeks.forEach(function (r, i) {
-      if (i % 7 === 0 || i === reeks.length - 1) svg += '<text class="as" x="' + x(i) + '" y="' + (H - 8) + '" text-anchor="middle">' + r.label + '</text>';
-      svg += '<g class="st" data-tip="' + esc(r.label + ': ' + getal(r.n) + ' ' + eenheid) + '" data-x="' + x(i) + '" data-y="' + y(r.n) + '"><rect class="vang" x="' + (x(i) - w / 2) + '" y="' + T + '" width="' + Math.max(w, 8) + '" height="' + (H - T - O) + '"/></g>';
-    });
-    svg += '</svg>';
-    var tabel = '<details class="tabel"><summary>Toon als tabel</summary><table><thead><tr><th>Dag</th><th class="n">' + eenheid + '</th></tr></thead><tbody>' +
-      reeks.slice().reverse().map(function (r) { return '<tr><td>' + r.label + '</td><td class="n">' + getal(r.n) + '</td></tr>'; }).join('') + '</tbody></table></details>';
-    return '<h3>' + esc(titel) + '</h3><div class="gsub">' + esc(sub) + '</div>' + svg + tabel;
-  }
-
   // ---- tabbladen ----------------------------------------------------------------------------------------------------
   function toonAlles() { toonLijst(); if (tab === 'maand') toonMaand(); }
   function kiesTab(t) {
     tab = t;
     $('tabs').querySelectorAll('button').forEach(function (b) { b.classList.toggle('aan', b.dataset.tab === t); });
-    ['aanvragen', 'maand', 'sc'].forEach(function (n) { $('t-' + n).classList.toggle('verborgen', n !== t); });
+    ['aanvragen', 'maand'].forEach(function (n) { $('t-' + n).classList.toggle('verborgen', n !== t); });
     if (t === 'maand') toonMaand();
-    if (t === 'sc') toonSc();
     try { sessionStorage.setItem('ais-dashboard-tab', t); } catch (e) {}
   }
   $('tabs').addEventListener('click', function (e) { var b = e.target.closest('button[data-tab]'); if (b) kiesTab(b.dataset.tab); });
@@ -832,7 +722,7 @@ table.top td.q { word-break: break-word; }
     $('testbalk').classList.toggle('verborgen', !(CONFIG.test || lijst.test));
     $('login').classList.add('verborgen'); $('app').classList.remove('verborgen'); $('pw').value = ''; $('lfout').textContent = '';
     var bewaard = null; try { bewaard = sessionStorage.getItem('ais-dashboard-tab'); } catch (e) {}
-    kiesTab(bewaard || 'aanvragen'); meldStatus(); openUitMelding();
+    kiesTab(bewaard === 'maand' ? 'maand' : 'aanvragen'); meldStatus(); openUitMelding();
   }
   $('onthoud').checked = losseApp;
   $('lform').addEventListener('submit', async function (e) {
@@ -848,7 +738,7 @@ table.top td.q { word-break: break-word; }
       return inloggen(pw).catch(function (err) { $('lfout').textContent = ''; if (err && err.name === 'OperationError') vergeet(); });
     }).catch(function () { vergeet(); });
   }
-  $('uit').onclick = function () { vergeet(); sleutelPw = null; data = []; scToken = null; scSite = null; $('app').classList.add('verborgen'); $('login').classList.remove('verborgen'); $('lijst').innerHTML = ''; $('lfout').textContent = ''; };
+  $('uit').onclick = function () { vergeet(); sleutelPw = null; data = []; $('app').classList.add('verborgen'); $('login').classList.remove('verborgen'); $('lijst').innerHTML = ''; $('lfout').textContent = ''; };
   $('q').addEventListener('input', toonLijst);
   $('fstat').addEventListener('click', function (e) { var b = e.target.closest('button'); if (!b) return; fstat = b.dataset.v; this.querySelectorAll('button').forEach(function (x) { x.classList.toggle('aan', x === b); }); toonLijst(); });
 
