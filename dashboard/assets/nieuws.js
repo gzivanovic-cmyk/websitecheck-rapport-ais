@@ -485,9 +485,11 @@ window.AISNieuws = (function () {
           '<div class="ne-veld"><span class="ne-label">In het kort <small>optioneel, max. 3 punten bovenaan het artikel</small></span><div class="ne-kort">' +
             [0, 1, 2].map(function (i) { return '<input data-kort="' + i + '" value="' + esc(b.kort[i]) + '" placeholder="Punt ' + (i + 1) + '" aria-label="In het kort, punt ' + (i + 1) + '">'; }).join('') + '</div></div>' +
           '<div class="ne-veld"><span class="ne-label"><span>Tekst</span><small id="ne-woorden"></small></span>' +
-            '<div class="ne-gereedschap" role="toolbar" aria-label="Opmaak"><button type="button" data-md="h2" title="Tussenkop">Tussenkop</button><button type="button" data-md="h3" title="Kleine kop">Kleine kop</button><button type="button" data-md="vet" title="Vet"><b>B</b></button><button type="button" data-md="schuin" title="Schuin"><em>I</em></button><button type="button" data-md="link" title="Link">Link</button><button type="button" data-md="lijst" title="Opsomming">• Lijst</button><button type="button" data-md="nummer" title="Genummerde lijst">1. Lijst</button><button type="button" data-md="citaat" title="Citaat">“ Citaat</button></div>' +
-            '<textarea id="ne-tekst" data-v="tekst" placeholder="Begin met een korte inleiding. Zet daarna ## voor een tussenkop.">' + esc(b.tekst) + '</textarea>' +
-            '<p class="ne-uitleg"><code>## Tussenkop</code> · <code>**vet**</code> · <code>[tekst](/promesse/)</code> voor een link · <code>- </code> voor een lijst. Een lege regel begint een nieuwe alinea.</p></div>' +
+            '<div class="ne-gereedschap" role="toolbar" aria-label="Opmaak">' + [['h2', 'Tussenkop', 'Tussenkop'], ['h3', 'Kleine kop', 'Kleine kop'], ['vet', '<b>B</b>', 'Vet (⌘B)'], ['schuin', '<em>I</em>', 'Schuin (⌘I)'],
+              ['link', 'Link', 'Link (⌘K)'], ['lijst', '• Lijst', 'Opsomming'], ['nummer', '1. Lijst', 'Genummerde lijst'], ['citaat', '“ Citaat', 'Citaat']]
+              .map(function (k) { return '<button type="button" data-md="' + k[0] + '" title="' + k[2] + '" aria-pressed="false">' + k[1] + '</button>'; }).join('') + '</div>' +
+            '<div id="ne-tekst" class="ne-wysiwyg" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Tekst van het bericht" data-leeg="Begin met een korte inleiding. Kies daarna Tussenkop voor een nieuw kopje."></div>' +
+            '<p class="ne-uitleg">Selecteer tekst en kies een knop. Enter begint een nieuwe alinea. Plakken uit Word of Google Docs mag: koppen, vet, lijsten en links gaan mee.</p></div>' +
           '<div class="ne-twee"><div class="ne-veld"><label for="ne-seot">SEO-titel ' + teller('t-seot', 60) + '</label><input id="ne-seot" data-v="seoTitel" value="' + esc(b.seoTitel) + '" placeholder="Leeg = de titel"></div>' +
           '<div class="ne-veld"><label for="ne-seob">SEO-omschrijving ' + teller('t-seob', 160) + '</label><input id="ne-seob" data-v="seoBeschrijving" value="' + esc(b.seoBeschrijving) + '" placeholder="Leeg = de samenvatting"></div></div>' +
         '</div>' +
@@ -523,37 +525,118 @@ window.AISNieuws = (function () {
     $('ne-bestand').onchange = function () { if (this.files[0]) kiesBeeld(this.files[0]); this.value = ''; };
     if ($('ne-geenbeeld')) $('ne-geenbeeld').onclick = function () { ed.b.beeld = ''; tekenEditor(); };
     $('ne-deelstijl').onclick = function (e) { var k = e.target.closest('button'); if (!k) return; ed.b.deelStijl = k.dataset.ds; this.querySelectorAll('button').forEach(function (x) { x.classList.toggle('aan', x === k); }); werkBij(); };
-    el.querySelector('.ne-gereedschap').onclick = function (e) { var k = e.target.closest('[data-md]'); if (k) opmaak(k.dataset.md); };
-    var ta = $('ne-tekst'), groei = function () { ta.style.height = 'auto'; ta.style.height = Math.max(360, ta.scrollHeight + 4) + 'px'; };
-    ta.addEventListener('input', groei); setTimeout(groei, 0);
-    ta.addEventListener('keydown', function (e) {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'b') { e.preventDefault(); opmaak('vet'); }
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'i') { e.preventDefault(); opmaak('schuin'); }
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); opmaak('link'); }
+    var balk = el.querySelector('.ne-gereedschap'), vlak = $('ne-tekst');
+    balk.addEventListener('mousedown', function (e) { if (e.target.closest('[data-md]')) e.preventDefault(); });   // selectie in de tekst laten staan
+    balk.onclick = function (e) { var k = e.target.closest('[data-md]'); if (k) opmaak(k.dataset.md); };
+    vlak.innerHTML = md(ed.b.tekst).html || '<p><br></p>';
+    try { document.execCommand('defaultParagraphSeparator', false, 'p'); document.execCommand('styleWithCSS', false, false); } catch (e) {}
+    var tekstUit = function () { ed.b.tekst = htmlNaarMd(vlak); vlak.classList.toggle('is-leeg', !vlak.textContent.trim() && !vlak.querySelector('li')); werkBij(); };
+    vlak.classList.toggle('is-leeg', !vlak.textContent.trim());
+    vlak.addEventListener('input', tekstUit);
+    vlak.addEventListener('keydown', function (e) {
+      var k = (e.metaKey || e.ctrlKey) && e.key.toLowerCase();
+      if (k === 'b') { e.preventDefault(); opmaak('vet'); } else if (k === 'i') { e.preventDefault(); opmaak('schuin'); } else if (k === 'k') { e.preventDefault(); opmaak('link'); }
     });
+    // plakken: alleen wat de site ook kent (koppen, vet, schuin, links, lijsten, citaat); de rest valt weg
+    vlak.addEventListener('paste', function (e) {
+      var d = e.clipboardData; if (!d) return;
+      e.preventDefault();
+      var h = d.getData('text/html'), mdTekst;
+      if (h) { var tijdelijk = document.createElement('div'); tijdelijk.innerHTML = h.replace(/<!--[\s\S]*?-->/g, '').replace(/<(style|script|meta|title)[\s\S]*?<\/\1>/gi, ''); mdTekst = htmlNaarMd(tijdelijk); }
+      else mdTekst = (d.getData('text/plain') || '').replace(/\r/g, '').split(/\n{2,}/).map(function (a) { return a.replace(/\n/g, ' '); }).join('\n\n');
+      var r = md(mdTekst).html.replace(/\n/g, '');
+      if (/^<p>[^]*<\/p>$/.test(r) && r.indexOf('</p>') === r.length - 4) r = r.slice(3, -4);   // één alinea: midden in de zin plakken
+      document.execCommand('insertHTML', false, r.replace(/ id="h-[^"]*"/g, ''));
+    });
+    document.addEventListener('selectionchange', knopStand);
+  }
+  // knoppen tonen of vet, een kop of een lijst aan staat op de plek van de cursor
+  function knopStand() {
+    var vlak = $('ne-tekst'), sel = window.getSelection(); if (!vlak || !sel.rangeCount || !vlak.contains(sel.anchorNode)) return;
+    var n = sel.anchorNode.nodeType === 3 ? sel.anchorNode.parentNode : sel.anchorNode, binnen = function (tags) { for (var x = n; x && x !== vlak; x = x.parentNode) if (tags.indexOf(x.nodeName) !== -1) return true; return false; };
+    var stand = { h2: binnen(['H2']), h3: binnen(['H3']), vet: binnen(['B', 'STRONG']), schuin: binnen(['I', 'EM']), link: binnen(['A']), lijst: binnen(['UL']), nummer: binnen(['OL']), citaat: binnen(['BLOCKQUOTE']) };
+    document.querySelectorAll('.ne-gereedschap [data-md]').forEach(function (k) { k.setAttribute('aria-pressed', stand[k.dataset.md] ? 'true' : 'false'); });
+  }
+  // de tekst in het bewerkvlak terug naar de opgeslagen vorm (dezelfde regels als md(), zodat heen en terug niets verandert)
+  function htmlNaarMd(root) {
+    var regel = function (node) {   // inline-inhoud van een blok
+      var uit = '';
+      node.childNodes.forEach(function (c) {
+        if (c.nodeType === 3) { uit += c.nodeValue.replace(/\s+/g, ' '); return; }
+        if (c.nodeType !== 1) return;
+        var t = c.nodeName, binnen = regel(c);
+        var vet = ((t === 'B' || t === 'STRONG') && !/normal|[1-4]00/.test(c.style.fontWeight)) || (t === 'SPAN' && /bold|[6-9]00/.test(c.style.fontWeight));   // Google Docs: <b style="font-weight:normal"> is niet vet
+        if (t === 'BR') uit += ' ';
+        else if (t === 'UL' || t === 'OL') { /* een lijst in een lijst: die punten komen apart mee */ }
+        else if (vet && binnen.trim()) uit += vast(binnen, '**');
+        else if ((t === 'I' || t === 'EM' || (t === 'SPAN' && c.style.fontStyle === 'italic')) && binnen.trim()) uit += vast(binnen, '*');
+        else if (t === 'A' && c.getAttribute('href') && binnen.trim()) uit += '[' + binnen.trim() + '](' + netteLink(c.getAttribute('href')) + ')';
+        else uit += binnen;
+      });
+      return uit;
+    };
+    var vast = function (t, teken) { var m = t.match(/^(\s*)([^]*?)(\s*)$/); return m[1] + teken + m[2] + teken + m[3]; };   // **vet** zonder spaties aan de binnenkant
+    var blokken = [], losseRegel = '';
+    var spoel = function () { var t = losseRegel.replace(/\s+/g, ' ').trim(); if (t) blokken.push(t); losseRegel = ''; };
+    var BLOK = /^(P|DIV|H[1-6]|UL|OL|LI|BLOCKQUOTE|SECTION|ARTICLE|HEADER|FOOTER|TABLE|TR|PRE)$/;
+    var loop = function (node) {
+      node.childNodes.forEach(function (c) {
+        if (c.nodeType === 1 && !BLOK.test(c.nodeName) && c.querySelector('p,div,h1,h2,h3,h4,h5,h6,ul,ol,li,blockquote,table')) { spoel(); loop(c); return; }   // bijv. de <b> om een hele Google Docs-tekst
+        if (c.nodeType === 3 || (c.nodeType === 1 && !BLOK.test(c.nodeName))) { if (c.nodeName === 'BR') { spoel(); return; } losseRegel += c.nodeType === 3 ? c.nodeValue : regel({ childNodes: [c] }); return; }
+        if (c.nodeType !== 1) return;
+        spoel();
+        var t = c.nodeName, tekst = function () { return regel(c).replace(/\s+/g, ' ').trim(); };
+        if (t === 'H1' || t === 'H2') { if (tekst()) blokken.push('## ' + tekst().replace(/^\*\*(.*)\*\*$/, '$1')); }
+        else if (/^H[3-6]$/.test(t)) { if (tekst()) blokken.push('### ' + tekst().replace(/^\*\*(.*)\*\*$/, '$1')); }
+        else if (t === 'UL' || t === 'OL') {
+          var items = [], n = 0;
+          c.querySelectorAll('li').forEach(function (li) { var x = regel(li).replace(/\s+/g, ' ').trim(); if (x) items.push((t === 'OL' ? (++n) + '. ' : '- ') + x); });
+          if (items.length) blokken.push(items.join('\n'));
+        }
+        else if (t === 'BLOCKQUOTE') { var q = c.textContent.replace(/\s+/g, ' ').trim() ? regel(c).replace(/\s+/g, ' ').trim() : ''; if (q) blokken.push('> ' + q); }
+        else if ((t === 'P' || t === 'LI' || t === 'PRE') && c.querySelector('ul,ol,h1,h2,h3,h4,h5,h6,blockquote,p,div')) loop(c);   // de browser zet een lijst soms ín een alinea
+        else if (t === 'P' || t === 'LI' || t === 'PRE') {
+          // een <br> midden in een alinea wordt een nieuwe alinea (zo werkt het op de site ook)
+          var delen = c.innerHTML.split(/<br\s*\/?>/i);
+          delen.forEach(function (d) { var x = document.createElement('div'); x.innerHTML = d; var y = regel(x).replace(/\s+/g, ' ').trim(); if (y) blokken.push(y); });
+        }
+        else loop(c);   // div, section, tabel: kijk erin
+      });
+    };
+    loop(root); spoel();
+    return blokken.join('\n\n');
+  }
+  function netteLink(href) {   // links naar de eigen site kort houden (/promesse/ in plaats van https://www.ais-groep.nl/promesse/)
+    return String(href).trim().replace(/^https?:\/\/(www\.)?ais-groep\.nl(?=\/)/i, '');
   }
   function opmaak(soortOp) {
-    var ta = $('ne-tekst'), a = ta.selectionStart, z = ta.selectionEnd, t = ta.value, sel = t.slice(a, z);
-    var regelBegin = t.lastIndexOf('\n', a - 1) + 1, nieuw, cursor;
-    var omhul = function (l, r, standaard) { var x = sel || standaard; nieuw = t.slice(0, a) + l + x + r + t.slice(z); cursor = [a + l.length, a + l.length + x.length]; };
-    var voorvoegsel = function (pre) {
-      var eind = t.indexOf('\n', z); if (eind === -1) eind = t.length;
-      var blok = t.slice(regelBegin, eind).split('\n').map(function (r, i) { return (typeof pre === 'function' ? pre(i) : pre) + r.replace(/^(#{2,3}\s+|>\s*|\s*[-*]\s+|\s*\d+[.)]\s+)/, ''); }).join('\n');
-      nieuw = t.slice(0, regelBegin) + blok + t.slice(eind); cursor = [regelBegin + blok.length, regelBegin + blok.length];
-    };
-    if (soortOp === 'vet') omhul('**', '**', 'vetgedrukt');
-    else if (soortOp === 'schuin') omhul('*', '*', 'schuin');
-    else if (soortOp === 'link') {
-      var url = window.prompt('Naar welke pagina linkt het? Bijvoorbeeld /promesse/ of https://…', '/');
-      if (!url) return;
-      omhul('[', '](' + url.trim() + ')', 'linktekst');
+    var vlak = $('ne-tekst'); vlak.focus();
+    var sel = window.getSelection(), n = sel.rangeCount ? sel.anchorNode : null; if (n && n.nodeType === 3) n = n.parentNode;
+    var blok = function (tag) { for (var x = n; x && x !== vlak; x = x.parentNode) if (x.nodeName === tag) return x; return null; };
+    if (soortOp === 'vet') document.execCommand('bold');
+    else if (soortOp === 'schuin') document.execCommand('italic');
+    else if (soortOp === 'h2' || soortOp === 'h3' || soortOp === 'citaat') {
+      var tag = soortOp === 'citaat' ? 'BLOCKQUOTE' : soortOp.toUpperCase();
+      if (blok('UL') || blok('OL')) document.execCommand(blok('UL') ? 'insertUnorderedList' : 'insertOrderedList');   // eerst uit de lijst
+      document.execCommand('formatBlock', false, blok(tag) ? '<p>' : '<' + tag.toLowerCase() + '>');
     }
-    else if (soortOp === 'h2') voorvoegsel('## ');
-    else if (soortOp === 'h3') voorvoegsel('### ');
-    else if (soortOp === 'lijst') voorvoegsel('- ');
-    else if (soortOp === 'nummer') voorvoegsel(function (i) { return (i + 1) + '. '; });
-    else if (soortOp === 'citaat') voorvoegsel('> ');
-    ta.value = nieuw; ed.b.tekst = nieuw; ta.focus(); ta.setSelectionRange(cursor[0], cursor[1]); ta.dispatchEvent(new Event('input'));
+    else if (soortOp === 'lijst' || soortOp === 'nummer') {
+      if (blok('H2') || blok('H3') || blok('BLOCKQUOTE')) document.execCommand('formatBlock', false, '<p>');
+      document.execCommand(soortOp === 'lijst' ? 'insertUnorderedList' : 'insertOrderedList');
+    }
+    else if (soortOp === 'link') {
+      var a = blok('A');
+      if (!a && sel.isCollapsed) { ctx.toast('Selecteer eerst de woorden die de link moeten worden.'); return; }
+      var bewaard = sel.getRangeAt(0).cloneRange();
+      var url = window.prompt(a ? 'Waar gaat de link heen? Maak het vak leeg om de link weg te halen.' : 'Naar welke pagina linkt het? Bijvoorbeeld /promesse/ of https://…', a ? a.getAttribute('href') : '/');
+      vlak.focus(); sel.removeAllRanges(); sel.addRange(bewaard);
+      if (url === null) return;
+      url = netteLink(url);
+      if (a && !url) { var r = document.createRange(); r.selectNodeContents(a); sel.removeAllRanges(); sel.addRange(r); document.execCommand('unlink'); }
+      else if (url && !/^(https?:\/\/|\/|#|mailto:|tel:)/.test(url)) { url = /^[\w.-]+\.[a-z]{2,}(\/|$)/i.test(url) ? 'https://' + url : '/' + url.replace(/^\/+/, ''); }
+      if (url && a) a.setAttribute('href', url); else if (url) document.execCommand('createLink', false, url);
+    }
+    vlak.dispatchEvent(new Event('input')); knopStand();
   }
 
   var kladTimer = null, deelTimer = null;
@@ -779,6 +862,6 @@ window.AISNieuws = (function () {
   return {
     toon: function (c) { ctx = c; toon(); },
     uit: function () { opslag = null; berichten = []; geladen = false; beeldUrl = {}; if ($('neditor')) { $('neditor').remove(); document.body.style.overflow = ''; } ed = null; },
-    _test: { md: md, maakSlug: maakSlug, isoUit: isoUit, seo: seo, woorden: woorden, soort: soort }
+    _test: { md: md, htmlNaarMd: htmlNaarMd, maakSlug: maakSlug, isoUit: isoUit, seo: seo, woorden: woorden, soort: soort }
   };
 })();
