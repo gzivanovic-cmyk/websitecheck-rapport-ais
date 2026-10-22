@@ -161,15 +161,50 @@ window.AISNieuws = (function () {
     try { bestanden = JSON.parse(sessionStorage.getItem(SLEUTEL) || '{}'); } catch (e) {}
     var bewaar = function () { try { var json = {}; Object.keys(bestanden).forEach(function (p) { if (/\.json$/.test(p)) json[p] = bestanden[p]; }); sessionStorage.setItem(SLEUTEL, JSON.stringify(json)); } catch (e) {} };
     var nieuweSha = function () { return Math.random().toString(16).slice(2) + Date.now().toString(16); };
+    var WEG = 'ais-nieuws-test-weg', weg = []; try { weg = JSON.parse(sessionStorage.getItem(WEG) || '[]'); } catch (e) {}
+    // drie voorbeeldberichten om de lijst en de planning te proberen, ingepland op de dinsdagen na volgende week (09:30)
+    async function zaai() {
+      var p = delen(new Date()), vandaag = Date.UTC(+p.year, p.month - 1, +p.day), dinsdag = vandaag + (((9 - new Date(vandaag).getUTCDay()) % 7) || 7) * 864e5;
+      VOORBEELDEN.forEach(function (v, i) {
+        var pad = 'berichten/' + v.id + '.json';
+        if (bestanden[pad] || weg.indexOf(pad) !== -1) return;
+        var b = schoon(Object.assign(leeg(), v, { status: 'klaar', publicatie: isoUit(new Date(dinsdag + (i + 2) * 7 * 864e5).toISOString().slice(0, 10), '09:30') }));
+        bestanden[pad] = { b64: naarB64(JSON.stringify(b, null, 2)), sha: nieuweSha() };
+      });
+      bewaar();
+      await Promise.all(VOORBEELDEN.map(async function (v) {   // foto's alleen in het geheugen (te groot voor sessionStorage)
+        if (bestanden[v.beeld]) return;
+        try { var r = await fetch('data-test/voorbeeld/' + v.beeld.split('/').pop()); if (r.ok) bestanden[v.beeld] = { b64: bytesB64(await r.arrayBuffer()), sha: nieuweSha() }; } catch (e) {}
+      }));
+    }
+    var gezaaid = null;
     return {
       echt: false,
       controleer: async function () { return true; },
-      lijst: async function () { return Object.keys(bestanden).map(function (p) { return { pad: p, sha: bestanden[p].sha }; }); },
+      lijst: async function () { gezaaid = gezaaid || zaai(); await gezaaid; return Object.keys(bestanden).map(function (p) { return { pad: p, sha: bestanden[p].sha }; }); },
       leesBlob: async function (sha) { var p = Object.keys(bestanden).find(function (x) { return bestanden[x].sha === sha; }); return p ? bestanden[p].b64 : ''; },
       schrijf: async function (pad, b64, sha) { if (bestanden[pad] && bestanden[pad].sha !== sha) throw Object.assign(new Error('conflict'), { soort: 'conflict' }); bestanden[pad] = { b64: b64, sha: nieuweSha() }; bewaar(); return bestanden[pad].sha; },
-      wis: async function (pad) { delete bestanden[pad]; bewaar(); }
+      wis: async function (pad) { delete bestanden[pad]; weg.push(pad); try { sessionStorage.setItem(WEG, JSON.stringify(weg)); } catch (e) {} bewaar(); }
     };
   }
+  // alleen voor de lokale test; feiten zoals ze op de site staan
+  var VOORBEELDEN = [
+    { id: 'voorbeeld-prijzen', titel: 'Altijd de juiste prijzen: zo werken de prijsupdates in Promesse', slug: 'prijsupdates-promesse', rubriek: 'Leveranciers en prijzen',
+      samenvatting: 'Nieuwe prijzen van uw leveranciers staan in Promesse voor u klaar. U kijkt ze na en accepteert ze met één klik.',
+      kort: ['AIS houdt de prijzen van ruim 150 leveranciers bij', 'Nieuwe prijzen staan voor u klaar', 'U accepteert ze met één klik'],
+      beeld: 'beelden/prijzen.jpg', beeldAlt: 'Verfblikken op een schap in een verfspeciaalzaak',
+      tekst: 'Prijzen van leveranciers veranderen regelmatig. Wie dat met de hand bijhoudt, is er al snel uren mee bezig, en een fout zie je pas aan de kassa.\n\n## Wij houden de prijzen bij\nAIS houdt de prijzen van ruim 150 leveranciers voor u bij. Komt er een nieuwe prijslijst, dan zetten wij die in Promesse voor u klaar.\n\n## U accepteert met één klik\nU ziet precies wat er verandert. Klopt het, dan accepteert u de nieuwe prijzen met één klik. Uw schaplabels print u daarna ook met één klik.\n\nMeer weten? Lees over [artikelbeheer](/artikelbeheer/).' },
+    { id: 'voorbeeld-inmeten', titel: 'Inmeten aan huis met de app: van raam tot offerte', slug: 'inmeten-met-de-app', rubriek: 'Promesse',
+      samenvatting: 'Met de inmeet-app legt u per raam de maten vast bij de klant thuis. Promesse rekent de offerte daarna zelf uit.',
+      kort: ['Per raam inmeten met de app', 'Promesse rekent stof, plooi, confectie en montage uit', 'De offerte staat meteen klaar'],
+      beeld: 'beelden/inmeten.jpg', beeldAlt: 'Adviseur meet een raam in bij een klant thuis',
+      tekst: 'Bij gordijnen en raamdecoratie begint alles met goed inmeten. Een vergeten maat kost u een extra rit, of erger: een product dat niet past.\n\n## Per raam inmeten\nMet de inmeet-app van Promesse legt u bij de klant thuis per raam de maten vast. Zo heeft u alles compleet voordat u weer in de auto stapt.\n\n## Promesse rekent het uit\nStof, plooi, confectie en montage: Promesse rekent het maatwerk zelf voor u uit. Uw offerte staat daardoor meteen klaar.\n\nLees meer over [Promesse voor woninginrichting](/branches/woninginrichting/).' },
+    { id: 'voorbeeld-mengkleuren', titel: 'Mengkleuren per klant bewaren: nooit meer zoeken naar die ene kleur', slug: 'mengkleuren-per-klant', rubriek: 'Tips voor de speciaalzaak',
+      samenvatting: 'Een klant wil dezelfde kleur als vorig jaar? In Promesse staat elke mengkleur bij de klant, dus u heeft hem zo gevonden.',
+      kort: ['Elke mengkleur staat bij de klant', 'Snel terug te vinden aan de toonbank', 'Ook handig voor schilders op rekening'],
+      beeld: 'beelden/mengen.jpg', beeldAlt: 'Verf wordt gemengd aan de toonbank van een verfwinkel',
+      tekst: '"Dezelfde kleur als vorig jaar, graag." Als niemand meer weet welke kleur dat was, begint het zoeken.\n\n## Elke kleur bij de klant\nIn Promesse slaat u elke mengkleur op bij de klant. Komt hij terug, dan zoekt u de klant op en ziet u meteen wat er de vorige keer is gemengd.\n\n## Handig voor schilders\nVoor schilders die op rekening kopen werkt het net zo. U ziet per klant welke kleuren en producten zij gebruiken.\n\nLees meer over [Promesse voor verf en wand](/branches/verf-en-wand/).' }
+  ];
 
   // ---- token versleuteld bewaren (met het dashboardwachtwoord) -----------------------------------------------------
   var TOKENSLEUTEL = 'ais-nieuws-github';
@@ -247,6 +282,9 @@ window.AISNieuws = (function () {
       return (b.publicatie || b.gewijzigd || '').localeCompare(a.publicatie || a.gewijzigd || '') || (b.gewijzigd || '').localeCompare(a.gewijzigd || '');
     });
     var knop = function (v, t) { return '<button data-nf="' + v + '"' + (filter === v ? ' class="aan"' : '') + '>' + t + '</button>'; };
+    // ingeplande berichten als planning (volgorde aanpasbaar), behalve tijdens zoeken
+    var plan = (filter === 'alle' || filter === 'ingepland') && !zoek ? rijen.filter(function (b) { return soort(b) === 'ingepland'; }) : [];
+    var rest = rijen.filter(function (b) { return plan.indexOf(b) === -1; });
     doos.innerHTML =
       '<div class="n-kop"><div><h2 class="kop2">Nieuws<em>berichten</em></h2><p class="sub" style="margin-bottom:0">Schrijf, plan en beheer de berichten voor ais-groep.nl/nieuws. Tijden zijn altijd Nederlandse tijd.</p></div>' +
       '<button class="knop goud" type="button" id="n-nieuw">+ Nieuw bericht</button></div>' +
@@ -256,22 +294,101 @@ window.AISNieuws = (function () {
         .map(function (k) { return '<div class="kpi"><b>' + k[0] + '</b><span>' + k[1] + '</span></div>'; }).join('') + '</div>' +
       '<div class="tools"><div class="seg" id="n-filter">' + knop('alle', 'Alles') + knop('concept', 'Concepten') + knop('ingepland', 'Ingepland') + knop('gepubliceerd', 'Gepubliceerd') + knop('aandacht', 'Aandacht') + knop('prullenbak', 'Prullenbak' + (tel.prullenbak ? ' (' + tel.prullenbak + ')' : '')) + '</div>' +
       '<input class="zoek" id="n-zoek" type="search" placeholder="Zoek in titel of samenvatting" aria-label="Zoek in berichten" value="' + esc(zoek) + '"></div>' +
-      (rijen.length ? '<div class="n-lijst">' + rijen.map(kaart).join('') + '</div>'
-        : '<div class="leeg">' + (berichten.length ? 'Niets gevonden met dit filter.' : 'Nog geen berichten. Klik op <b>Nieuw bericht</b> om te beginnen.') + '</div>');
+      (plan.length ? planHtml(plan) + (rest.length ? '<h3 class="n-sub">Overige berichten</h3>' : '') : '') +
+      (rest.length ? '<div class="n-lijst">' + rest.map(function (b) { return kaart(b); }).join('') + '</div>'
+        : plan.length ? '' : '<div class="leeg">' + (berichten.length ? 'Niets gevonden met dit filter.' : 'Nog geen berichten. Klik op <b>Nieuw bericht</b> om te beginnen.') + '</div>');
     $('n-nieuw').onclick = function () { openEditor(null); };
     $('n-filter').onclick = function (e) { var b = e.target.closest('button'); if (b) { filter = b.dataset.nf; tekenLijst(); } };
     $('n-zoek').oninput = function () { zoek = this.value.toLowerCase().trim(); var pos = this.selectionStart; tekenLijst(); var z = $('n-zoek'); z.focus(); z.setSelectionRange(pos, pos); };
-    doos.querySelectorAll('[data-nid]').forEach(function (k) { k.onclick = function () { openEditor(k.dataset.nid); }; });
+    doos.querySelectorAll('[data-nid]').forEach(function (k) { k.onclick = function () { if (!sleepNet) openEditor(k.dataset.nid); }; });
+    if (plan.length) koppelPlan();
     doos.querySelectorAll('[data-nbeeld]').forEach(function (el) { beeld(el.dataset.nbeeld).then(function (u) { if (u) { el.style.backgroundImage = 'url(' + u + ')'; el.textContent = ''; } else el.textContent = 'Geen foto'; }).catch(function () { el.textContent = 'Geen foto'; }); });
   }
-  function kaart(b) {
+  function kaart(b, inPlanning) {
     var s = soort(b), sc = seo(b).score;
-    var wanneer = s === 'ingepland' ? 'Gaat online ' + toonTijd(b.publicatie) : s === 'gepubliceerd' ? toonTijd(b.publicatie, true) : 'Gewijzigd ' + toonTijd(b.gewijzigd, true);
+    var wanneer = inPlanning ? '' : s === 'ingepland' ? 'Gaat online ' + toonTijd(b.publicatie) : s === 'gepubliceerd' ? toonTijd(b.publicatie, true) : 'Gewijzigd ' + toonTijd(b.gewijzigd, true);
     return '<button type="button" class="nk" data-nid="' + esc(b.id) + '">' +
       '<span class="nk-beeld"' + (b.beeld ? ' data-nbeeld="' + esc(b.beeld) + '"' : '') + '>' + (b.beeld ? '' : 'Geen foto') + '</span>' +
-      '<span><span class="meta">' + pil(b) + '<span>' + esc(wanneer) + '</span>' + (b.rubriek ? '<span>· ' + esc(b.rubriek) + '</span>' : '') + '</span>' +
+      '<span><span class="meta">' + pil(b) + (wanneer ? '<span>' + esc(wanneer) + '</span>' : '') + (b.rubriek ? '<span>' + (wanneer ? '· ' : '') + esc(b.rubriek) + '</span>' : '') + '</span>' +
       '<h3>' + esc(b.titel || 'Zonder titel') + '</h3>' + (b.samenvatting ? '<p>' + esc(b.samenvatting) + '</p>' : '') + '</span>' +
       '<span class="n-score ' + scoreKlas(sc) + '" title="SEO-controle">' + sc + '</span></button>';
+  }
+
+  // ---- planning: de momenten blijven staan, de berichten schuiven erlangs ----------------------------------------
+  function planHtml(plan) {
+    var tijd = function (b) { var d = new Date(b.publicatie); return '<b>' + esc(d.toLocaleDateString('nl-NL', { timeZone: TZ, weekday: 'short', day: 'numeric', month: 'short' })) + '</b><small>' + esc(d.toLocaleTimeString('nl-NL', { timeZone: TZ, hour: '2-digit', minute: '2-digit' })) + '</small>'; };
+    return '<div class="n-plankop"><h3>Planning</h3><p>' + (plan.length > 1 ? 'Sleep een bericht (of gebruik de pijltjes) om de volgorde te bepalen. De momenten links blijven staan; de berichten schuiven erlangs.' : 'Plan meer berichten in, dan kun je hier de volgorde bepalen.') + '</p></div>' +
+      '<div class="n-planrij"><ol class="n-momenten" aria-label="Publicatiemomenten">' + plan.map(function (b) { return '<li>' + tijd(b) + '</li>'; }).join('') + '</ol>' +
+      '<ol class="n-plan" id="n-plan" aria-label="Volgorde van de ingeplande berichten">' + plan.map(function (b, i) {
+        return '<li class="np" data-pid="' + esc(b.id) + '">' + (plan.length > 1 ? '<span class="np-knoppen"><button type="button" class="np-pijl" data-stap="-1" aria-label="Eerder plannen"' + (i === 0 ? ' disabled' : '') + '>↑</button>' +
+          '<span class="np-greep" aria-hidden="true" title="Slepen">⋮⋮</span><button type="button" class="np-pijl" data-stap="1" aria-label="Later plannen"' + (i === plan.length - 1 ? ' disabled' : '') + '>↓</button></span>' : '') + kaart(b, true) + '</li>';
+      }).join('') + '</ol></div>';
+  }
+  var sleepNet = false;   // na slepen geen klik doorlaten (anders opent de editor)
+  function koppelPlan() {
+    var lijst = $('n-plan'), volgorde = function () { return [].map.call(lijst.children, function (li) { return li.dataset.pid; }); };
+    lijst.querySelectorAll('.np-pijl').forEach(function (k) {
+      k.onclick = function (e) {
+        e.stopPropagation();
+        var ids = volgorde(), i = ids.indexOf(k.closest('.np').dataset.pid), j = i + +k.dataset.stap;
+        if (j < 0 || j >= ids.length) return;
+        ids.splice(j, 0, ids.splice(i, 1)[0]); herplan(ids, ids[j]);
+      };
+    });
+    lijst.querySelectorAll('.np').forEach(function (li) {
+      var greep = li.querySelector('.np-greep'); if (!greep) return;
+      // slepen aan de greep, of (met muis of pen) aan de hele kaart; op een telefoon alleen aan de greep, zodat scrollen blijft werken
+      li.addEventListener('pointerdown', function (e) {
+        if (e.button !== 0 || e.target.closest('.np-pijl') || (e.pointerType === 'touch' && !e.target.closest('.np-greep'))) return;
+        var start = e.clientY, voor = volgorde().join(), bewogen = false;
+        try { li.setPointerCapture(e.pointerId); } catch (x) {}
+        var beweeg = function (ev) {
+          if (ev.pointerId !== e.pointerId) return;
+          if (!bewogen && Math.abs(ev.clientY - start) < 6) return;
+          if (!bewogen) { bewogen = true; li.classList.add('sleept'); lijst.classList.add('bezig'); }
+          ev.preventDefault();
+          // bij een snelle beweging meerdere plekken tegelijk opschuiven
+          for (var n = 0; n < 50; n++) {
+            var dy = ev.clientY - start, vorige = li.previousElementSibling, volgende = li.nextElementSibling, top = li.offsetTop;
+            if (volgende && dy > volgende.offsetHeight / 2) lijst.insertBefore(volgende, li);
+            else if (vorige && -dy > vorige.offsetHeight / 2) lijst.insertBefore(li, vorige);
+            else break;
+            start += li.offsetTop - top;
+          }
+          li.style.transform = 'translateY(' + (ev.clientY - start) + 'px)';
+        };
+        var los = function (ev) {
+          if (ev.pointerId !== e.pointerId) return;
+          document.removeEventListener('pointermove', beweeg); document.removeEventListener('pointerup', los); document.removeEventListener('pointercancel', los);
+          li.classList.remove('sleept'); lijst.classList.remove('bezig'); li.style.transform = '';
+          if (!bewogen) return;
+          sleepNet = true; setTimeout(function () { sleepNet = false; }, 50);
+          if (volgorde().join() !== voor) herplan(volgorde(), li.dataset.pid);
+        };
+        document.addEventListener('pointermove', beweeg, { passive: false }); document.addEventListener('pointerup', los); document.addEventListener('pointercancel', los);
+      });
+    });
+  }
+  async function bewaarBericht(b, wat) {   // alleen het JSON-bestand (de deelafbeelding hangt niet af van het moment)
+    b.gewijzigd = nuIso();
+    var sha = await opslag.schrijf(b._pad, naarB64(JSON.stringify(schoon(b), null, 2) + '\n'), b._sha, 'Nieuws: ' + b.titel + ' (' + wat + ')');
+    b._sha = sha; bestandSha[b._pad] = sha;
+  }
+  async function herplan(ids, verschoven) {
+    var plan = ids.map(function (id) { return berichten.find(function (x) { return x.id === id; }); });
+    var tijden = plan.map(function (b) { return b.publicatie; }).sort(function (a, c) { return Date.parse(a) - Date.parse(c); });
+    var anders = plan.map(function (b, i) { return { b: b, oud: b.publicatie, nieuw: tijden[i] }; }).filter(function (x) { return x.oud !== x.nieuw; });
+    if (!anders.length) { tekenLijst(); return; }
+    anders.forEach(function (x) { x.b.publicatie = x.nieuw; });
+    tekenLijst();
+    var li = document.querySelector('.np[data-pid="' + verschoven + '"]'); if (li) { li.classList.add('net'); var k = li.querySelector('.np-pijl:not([disabled])'); if (k && document.activeElement && document.activeElement.classList.contains('np-pijl')) k.focus(); }
+    try {
+      for (var i = 0; i < anders.length; i++) await bewaarBericht(anders[i].b, 'verschoven naar ' + toonTijd(anders[i].nieuw));
+      var b = berichten.find(function (x) { return x.id === verschoven; });
+      ctx.toast('Volgorde opgeslagen. "' + (b.titel.length > 48 ? b.titel.slice(0, 46) + '…' : b.titel) + '" gaat nu online op ' + toonTijd(b.publicatie) + '.');
+    } catch (e) {
+      fout(e); geladen = false; toon();   // opnieuw inlezen: dan klopt de lijst weer met wat er echt is opgeslagen
+    }
   }
 
   // ---- koppelen met GitHub ----------------------------------------------------------------------------------------
@@ -330,6 +447,7 @@ window.AISNieuws = (function () {
     var b = schoon(bestaand || (los ? Object.assign(leeg(), { id: los.b.id }) : leeg()));
     ed = { b: b, orig: JSON.stringify(b), nieuw: !bestaand, pad: bestaand ? bestaand._pad : 'berichten/' + b.id + '.json', sha: bestaand ? bestaand._sha : null,
       slugVrij: !bestaand || (!b.slug || b.slug === maakSlug(b.titel)) && soort(b) === 'concept', wanneer: b.publicatie && soort(b) === 'ingepland' ? 'later' : 'nu', voorbeeld: false };
+    if (soort(b) === 'concept' && achteraan()) ed.wanneer = 'rij';   // staat er al iets in de planning, dan standaard daarachter
     var klad = null; try { klad = JSON.parse(localStorage.getItem(KLAD(b.id)) || 'null'); } catch (e) {}
     if (los) ed.b = schoon(los.b);
     else if (klad && klad.b && JSON.stringify(schoon(klad.b)) !== ed.orig && klad.tijd > Date.parse(b.gewijzigd || 0)) {
@@ -467,14 +585,23 @@ window.AISNieuws = (function () {
     clearTimeout(deelTimer); deelTimer = setTimeout(function () { tekenDeel($('ne-deel')).catch(function () {}); }, 250);
   }
 
+  function achteraan() {
+    var laatste = berichten.filter(function (x) { return x.id !== ed.b.id && soort(x) === 'ingepland'; }).map(function (x) { return x.publicatie; })
+      .sort(function (a, c) { return Date.parse(c) - Date.parse(a); })[0];
+    if (!laatste) return null;
+    var d = datumVeld(laatste), dag = new Date(Date.UTC(+d.datum.slice(0, 4), +d.datum.slice(5, 7) - 1, +d.datum.slice(8, 10)) + 7 * 864e5).toISOString().slice(0, 10);
+    return isoUit(dag, d.tijd);
+  }
   function tekenPub() {
-    var b = ed.b, s = soort(JSON.parse(ed.orig)), h = '';
+    var b = ed.b, s = soort(JSON.parse(ed.orig)), h = '', rij = achteraan();
+    if (ed.wanneer === 'rij' && !rij) ed.wanneer = 'nu';
     var keuze = '<div class="ne-wanneer"><label><input type="radio" name="ne-w" value="nu"' + (ed.wanneer === 'nu' ? ' checked' : '') + '> Direct publiceren</label>' +
+      (rij && s === 'concept' ? '<label><input type="radio" name="ne-w" value="rij"' + (ed.wanneer === 'rij' ? ' checked' : '') + '> Achteraan in de planning <small style="color:var(--muted)">(' + esc(toonTijd(rij)) + ')</small></label>' : '') +
       '<label><input type="radio" name="ne-w" value="later"' + (ed.wanneer === 'later' ? ' checked' : '') + '> Inplannen op</label>' +
       '<div class="ne-datum"' + (ed.wanneer === 'later' ? '' : ' hidden') + '><input type="date" id="ne-datum" value="' + ed.datum + '" aria-label="Datum"><input type="time" id="ne-tijd" value="' + ed.tijd + '" step="300" aria-label="Tijd"></div>' +
       '<p class="ne-hint" style="margin-left:25px"' + (ed.wanneer === 'later' ? '' : ' hidden') + ' id="ne-tzhint">Nederlandse tijd. Het bericht komt online bij de eerstvolgende bijwerkronde van de site (binnen ongeveer 5 minuten).</p></div>';
     if (s === 'concept') {
-      h = '<p class="ne-stand">Dit bericht is een <b>concept</b>. Alleen jij ziet het.</p>' + keuze + '<div class="ne-acties"><button class="knop" type="button" id="ne-publiceer">' + (ed.wanneer === 'later' ? 'Inplannen' : 'Publiceren') + '</button></div>';
+      h = '<p class="ne-stand">Dit bericht is een <b>concept</b>. Alleen jij ziet het.</p>' + keuze + '<div class="ne-acties"><button class="knop" type="button" id="ne-publiceer">' + (ed.wanneer === 'nu' ? 'Publiceren' : 'Inplannen') + '</button></div>';
     } else if (s === 'ingepland') {
       h = '<p class="ne-stand">Ingepland: gaat online op <b>' + esc(toonTijd(b.publicatie)) + '</b>.</p>' + keuze.replace('Direct publiceren', 'Nu publiceren').replace('Inplannen op', 'Ander moment') +
         '<div class="ne-acties"><button class="knop" type="button" id="ne-publiceer">' + (ed.wanneer === 'later' ? 'Moment opslaan' : 'Nu publiceren') + '</button><button class="knop licht" type="button" id="ne-concept">Planning stoppen (terug naar concept)</button></div>';
@@ -507,10 +634,10 @@ window.AISNieuws = (function () {
   }
 
   async function publiceer() {
-    var b = ed.b, later = ed.wanneer === 'later';
+    var b = ed.b, later = ed.wanneer !== 'nu';
     if (!b.titel.trim()) { ctx.toast('Geef het bericht eerst een titel.'); $('ne-titel').focus(); return; }
     if (!b.tekst.trim()) { ctx.toast('Er staat nog geen tekst in het bericht.'); return; }
-    var iso = later ? isoUit(ed.datum, ed.tijd) : nuIso();
+    var iso = ed.wanneer === 'rij' ? achteraan() : later ? isoUit(ed.datum, ed.tijd) : nuIso();
     if (later && Date.parse(iso) <= Date.now() + 60000) { ctx.toast('Kies een moment in de toekomst, of kies Direct publiceren.'); return; }
     var r = seo(b);
     if (r.score < GRENS && !(await ctx.bevestig('SEO-controle: ' + r.score + ' van 100', 'Nog niet alles staat goed (zie de punten met een uitroepteken). Wil je het bericht toch ' + (later ? 'inplannen' : 'publiceren') + '?', later ? 'Toch inplannen' : 'Toch publiceren'))) return;
@@ -633,7 +760,7 @@ window.AISNieuws = (function () {
   // ---- voorbeeld zoals op de site -----------------------------------------------------------------------------------
   function tekenVoorbeeld() {
     var b = ed.b, r = md(b.tekst), kort = (b.kort || []).filter(function (k) { return k.trim(); });
-    var auteur = (b.auteur || 'AIS-Groep').trim(), datum = new Date(b.publicatie && soort(b) !== 'concept' ? b.publicatie : ed.wanneer === 'later' ? isoUit(ed.datum, ed.tijd) : Date.now());
+    var auteur = (b.auteur || 'AIS-Groep').trim(), datum = new Date(b.publicatie && soort(b) !== 'concept' ? b.publicatie : ed.wanneer === 'later' ? isoUit(ed.datum, ed.tijd) : ed.wanneer === 'rij' ? (achteraan() || Date.now()) : Date.now());
     $('ne-voorbeeld').innerHTML = '<div class="vb"><div class="vb-hero"><div><span class="vb-eyebrow">' + esc(b.rubriek || 'Nieuws') + '</span><h1>' + esc(b.titel || 'Titel van het bericht') + '</h1>' +
       '<div class="vb-auteur"><span class="vb-av">' + esc(initialen(auteur)) + '</span><span><b>' + esc(auteur) + '</b>AIS-Groep · ' + datum.toLocaleDateString('nl-NL', { timeZone: TZ, day: 'numeric', month: 'long', year: 'numeric' }) + ' · ' + Math.max(1, Math.round(woorden(b.tekst) / 200)) + ' min lezen</span></div></div>' +
       (b.beeld ? '<img id="vb-beeld" alt="' + esc(b.beeldAlt) + '">' : '') + '</div>' +
