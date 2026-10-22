@@ -282,7 +282,8 @@ window.AISNieuws = (function () {
       if (sa === 'ingepland' && sb === 'ingepland') return Date.parse(a.publicatie) - Date.parse(b.publicatie);   // eerstvolgende bovenaan
       return (b.publicatie || b.gewijzigd || '').localeCompare(a.publicatie || a.gewijzigd || '') || (b.gewijzigd || '').localeCompare(a.gewijzigd || '');
     });
-    var knop = function (v, t) { return '<button data-nf="' + v + '"' + (filter === v ? ' class="aan"' : '') + '>' + t + '</button>'; };
+    var UITLEG = { aandacht: 'Berichten met een SEO-score onder ' + GRENS + ' (het rondje rechts op elk kaartje)' };
+    var knop = function (v, t) { return '<button data-nf="' + v + '"' + (filter === v ? ' class="aan"' : '') + (UITLEG[v] ? ' title="' + UITLEG[v] + '"' : '') + '>' + t + '</button>'; };
     // ingeplande berichten als planning (volgorde aanpasbaar), behalve tijdens zoeken
     var plan = (filter === 'alle' || filter === 'ingepland') && !zoek ? rijen.filter(function (b) { return soort(b) === 'ingepland'; }) : [];
     var rest = rijen.filter(function (b) { return plan.indexOf(b) === -1; });
@@ -291,13 +292,13 @@ window.AISNieuws = (function () {
       '<button class="knop goud" type="button" id="n-nieuw">+ Nieuw bericht</button></div>' +
       (opslag.echt ? '<p class="n-noot" style="margin-top:14px">De nieuwe site staat nog niet live. Gepubliceerde berichten verschijnen nu op de conceptsite; zodra de site live staat, komen ze vanzelf op <b>ais-groep.nl/nieuws</b>.</p>'
         : '<p class="testbalk" style="margin-top:14px">Lokale test: berichten blijven in deze browser en gaan <b>niet</b> naar GitHub of de site.</p>') +
-      '<div class="kpis">' + [[tel.concept, 'concepten'], [tel.ingepland, 'ingepland'], [tel.gepubliceerd, 'gepubliceerd'], [tel.aandacht, 'SEO-aandacht']]
+      '<div class="kpis">' + [[tel.concept, 'concepten'], [tel.ingepland, 'ingepland'], [tel.gepubliceerd, 'gepubliceerd'], [tel.aandacht, 'nog verbeteren']]
         .map(function (k) { return '<div class="kpi"><b>' + k[0] + '</b><span>' + k[1] + '</span></div>'; }).join('') + '</div>' +
-      '<div class="tools"><div class="seg" id="n-filter">' + knop('alle', 'Alles') + knop('concept', 'Concepten') + knop('ingepland', 'Ingepland') + knop('gepubliceerd', 'Gepubliceerd') + knop('aandacht', 'Aandacht') + knop('prullenbak', 'Prullenbak' + (tel.prullenbak ? ' (' + tel.prullenbak + ')' : '')) + '</div>' +
+      '<div class="tools"><div class="seg" id="n-filter">' + knop('alle', 'Alles') + knop('concept', 'Concepten') + knop('ingepland', 'Ingepland') + knop('gepubliceerd', 'Gepubliceerd') + knop('aandacht', 'Nog verbeteren') + knop('prullenbak', 'Prullenbak' + (tel.prullenbak ? ' (' + tel.prullenbak + ')' : '')) + '</div>' +
       '<input class="zoek" id="n-zoek" type="search" placeholder="Zoek in titel of samenvatting" aria-label="Zoek in berichten" value="' + esc(zoek) + '"></div>' +
       (plan.length ? planHtml(plan) + (rest.length ? '<h3 class="n-sub">Overige berichten</h3>' : '') : '') +
       (rest.length ? '<div class="n-lijst">' + rest.map(function (b) { return kaart(b); }).join('') + '</div>'
-        : plan.length ? '' : '<div class="leeg">' + (berichten.length ? 'Niets gevonden met dit filter.' : 'Nog geen berichten. Klik op <b>Nieuw bericht</b> om te beginnen.') + '</div>');
+        : plan.length ? '' : '<div class="leeg">' + (filter === 'aandacht' && !zoek ? 'Alle berichten hebben een SEO-score van ' + GRENS + ' of hoger. Mooi zo.' : berichten.length ? 'Niets gevonden met dit filter.' : 'Nog geen berichten. Klik op <b>Nieuw bericht</b> om te beginnen.') + '</div>');
     $('n-nieuw').onclick = function () { openEditor(null); };
     $('n-filter').onclick = function (e) { var b = e.target.closest('button'); if (b) { filter = b.dataset.nf; tekenLijst(); } };
     $('n-zoek').oninput = function () { zoek = this.value.toLowerCase().trim(); var pos = this.selectionStart; tekenLijst(); var z = $('n-zoek'); z.focus(); z.setSelectionRange(pos, pos); };
