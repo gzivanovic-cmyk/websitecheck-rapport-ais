@@ -10,7 +10,7 @@ window.AISNieuws = (function () {
   var REPO = 'gzivanovic-cmyk/ais-nieuws';
   var TZ = 'Europe/Amsterdam';
   var RUBRIEKEN = ['Tips voor de speciaalzaak', 'Promesse', 'Leveranciers en prijzen', 'Klantverhalen', 'Websites', 'Nieuws'];
-  var VASTE_ADRESSEN = ['ais-maakt-nu-ook-websites', 'software-op-maat-zonder-gedoe', 'ketenintegratie', 'veel-verschillende-leveranciers'];
+  var VASTE_ADRESSEN = [];   // vaste nieuwspagina's buiten het dashboard; sinds 23-10-2026 staan alle berichten in het dashboard, dus geen
   var FOTOMAAT = 'Liggend, minimaal 1600 × 1000 pixels';   // komt terug als 4:3 (artikel), 16:10 (kaartje) en 1200 × 630 (delen)
   var GRENS = 70;   // SEO-score: daaronder vraagt het dashboard of je echt wilt publiceren
   var ctx = null, opslag = null, berichten = [], filter = 'alle', zoek = '', geladen = false, laden = null;
