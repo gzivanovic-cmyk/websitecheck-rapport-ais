@@ -289,7 +289,7 @@ window.AISNieuws = (function () {
     var rest = rijen.filter(function (b) { return plan.indexOf(b) === -1; });
     doos.innerHTML =
       '<div class="n-kop"><div><h2 class="kop2">Nieuws<em>berichten</em></h2><p class="sub" style="margin-bottom:0">Schrijf, plan en beheer de berichten voor ais-groep.nl/nieuws. Tijden zijn altijd Nederlandse tijd.</p></div>' +
-      '<button class="knop goud" type="button" id="n-nieuw">+ Nieuw bericht</button></div>' +
+      '<div class="n-kopknoppen">' + (opslag.echt ? '<button class="knop licht" type="button" id="n-toestel">Ander toestel koppelen</button>' : '') + '<button class="knop goud" type="button" id="n-nieuw">+ Nieuw bericht</button></div></div>' +
       (opslag.echt ? '<p class="n-noot" style="margin-top:14px">De nieuwe site staat nog niet live. Gepubliceerde berichten verschijnen nu op de conceptsite; zodra de site live staat, komen ze vanzelf op <b>ais-groep.nl/nieuws</b>.</p>'
         : '<p class="testbalk" style="margin-top:14px">Lokale test: berichten blijven in deze browser en gaan <b>niet</b> naar GitHub of de site.</p>') +
       '<div class="kpis">' + [[tel.concept, 'concepten'], [tel.ingepland, 'ingepland'], [tel.gepubliceerd, 'gepubliceerd'], [tel.aandacht, 'nog verbeteren']]
@@ -300,6 +300,7 @@ window.AISNieuws = (function () {
       (rest.length ? '<div class="n-lijst">' + rest.map(function (b) { return kaart(b); }).join('') + '</div>'
         : plan.length ? '' : '<div class="leeg">' + (filter === 'aandacht' && !zoek ? 'Alle berichten hebben een SEO-score van ' + GRENS + ' of hoger. Mooi zo.' : berichten.length ? 'Niets gevonden met dit filter.' : 'Nog geen berichten. Klik op <b>Nieuw bericht</b> om te beginnen.') + '</div>');
     $('n-nieuw').onclick = function () { openEditor(null); };
+    if ($('n-toestel')) $('n-toestel').onclick = toestelScherm;
     $('n-filter').onclick = function (e) { var b = e.target.closest('button'); if (b) { filter = b.dataset.nf; tekenLijst(); } };
     $('n-zoek').oninput = function () { zoek = this.value.toLowerCase().trim(); var pos = this.selectionStart; tekenLijst(); var z = $('n-zoek'); z.focus(); z.setSelectionRange(pos, pos); };
     doos.querySelectorAll('[data-nid]').forEach(function (k) { k.onclick = function () { if (!sleepNet) openEditor(k.dataset.nid); }; });
@@ -392,20 +393,51 @@ window.AISNieuws = (function () {
     }
   }
 
+  // ---- ander toestel koppelen: sleutel kopiëren (Apple's gedeelde klembord zet hem op de iPhone) -------------------
+  function toestelScherm() {
+    var m = document.createElement('div'); m.className = 'modal'; m.setAttribute('role', 'dialog'); m.setAttribute('aria-modal', 'true');
+    m.innerHTML = '<div class="mk n-toestel"><h3>Ander toestel koppelen</h3>' +
+      '<ol><li>Klik hieronder op <b>Sleutel kopiëren</b>.</li><li>Open het dashboard op je iPhone, liefst als app op je beginscherm (Deel → Zet op beginscherm), en log in.</li>' +
+      '<li>Ga naar <b>Nieuws</b>, tik in het sleutelveld, kies <b>Plak</b> en tik op <b>Koppelen</b>. Je iPhone en Mac delen het klembord als ze bij hetzelfde Apple ID horen en dichtbij zijn.</li>' +
+      '<li>Vraagt je iPhone of hij de sleutel mag bewaren? Kies <b>Bewaar</b>. Dan is het volgende toestel één tik.</li></ol>' +
+      '<p class="ne-hint">De sleutel staat daarna maar een paar minuten op het klembord. Deel hem niet met anderen.</p>' +
+      '<div class="rk"><button class="knop licht" type="button" data-nt="sluit">Sluiten</button><button class="knop" type="button" id="nt-kopie">Sleutel kopiëren</button></div></div>';
+    document.body.appendChild(m);
+    var sluit = function () { m.remove(); document.removeEventListener('keydown', toets); }, toets = function (e) { if (e.key === 'Escape') sluit(); };
+    document.addEventListener('keydown', toets);
+    m.addEventListener('click', function (e) { if (e.target === m || e.target.getAttribute('data-nt') === 'sluit') sluit(); });
+    $('nt-kopie').onclick = async function () {
+      var k = this;
+      try {
+        var t = await leesToken(); if (!t) throw new Error('geen sleutel');
+        await navigator.clipboard.writeText(t);
+        k.textContent = 'Gekopieerd'; ctx.toast('Sleutel gekopieerd. Plak hem binnen een paar minuten op je andere toestel.');
+      } catch (e) { ctx.toast('Kopiëren lukte niet. Probeer het nog eens.'); }
+    };
+  }
+
   // ---- koppelen met GitHub ----------------------------------------------------------------------------------------
   function koppelScherm(doos) {
     var url = 'https://github.com/settings/personal-access-tokens/new?name=' + encodeURIComponent('AIS-dashboard nieuws') +
       '&description=' + encodeURIComponent('Nieuwsberichten schrijven vanuit het AIS-dashboard') + '&target_name=gzivanovic-cmyk&expires_in=365&contents=write';
+    var app = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true, iOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
     doos.innerHTML = '<h2 class="kop2">Nieuws<em>berichten</em></h2><p class="sub">Schrijf, plan en beheer de berichten voor ais-groep.nl/nieuws. Ze worden bewaard in je privé-opslag <b>ais-nieuws</b> op GitHub, met elke versie erbij.</p>' +
-      '<div class="n-koppel"><h3>Eenmalig koppelen (per toestel)</h3><p class="ne-hint">Het dashboard heeft een sleutel nodig die alleen bij de opslag ais-nieuws kan. Die maak je zelf aan; ik zie hem nooit.</p><ol>' +
+      '<div class="n-koppel"><h3>Dit toestel koppelen</h3>' +
+      (iOS && !app ? '<p class="n-tip"><b>Tip:</b> gebruik het dashboard als app (Deel → Zet op beginscherm) en koppel daar. In Safari zelf kan je iPhone bewaarde gegevens wissen als je de site een week niet opent; in de app blijft het staan.</p>' : '') +
+      '<p class="ne-hint">Plak je sleutel hieronder. Heb je hem al op je Mac gekoppeld? Kies daar bij Nieuws <b>Ander toestel koppelen → Sleutel kopiëren</b> en plak hem hier. Of tik in het veld en kies hem uit je bewaarde wachtwoorden.</p>' +
+      '<form class="rij2" id="n-koppelform" autocomplete="on"><input class="n-onzichtbaar" type="text" name="username" autocomplete="username" value="AIS-dashboard nieuws (GitHub-sleutel)" tabindex="-1" aria-hidden="true">' +
+      '<input id="n-token" name="password" type="password" autocomplete="current-password" placeholder="github_pat_…" aria-label="GitHub-sleutel"><button class="knop" type="submit" id="n-koppel">Koppelen</button></form>' +
+      '<p class="ne-hint" style="margin-top:10px">Na het koppelen vraagt je browser of hij de sleutel mag bewaren: kies <b>Bewaar</b>. Dan staat hij in je iCloud-wachtwoorden en is elk volgend toestel één tik. De sleutel wordt hier versleuteld met je dashboardwachtwoord bewaard.</p>' +
+      '<details class="n-nieuwesleutel"><summary>Nog geen sleutel? Zo maak je er een</summary><ol>' +
       '<li><a href="' + url + '" target="_blank" rel="noopener"><b>Open GitHub: nieuwe sleutel maken</b></a> (log in als gzivanovic-cmyk).</li>' +
-      '<li>Bij <b>Expiration</b>: kies de langste termijn (365 dagen). Daarna maak je een nieuwe sleutel.</li>' +
+      '<li>Bij <b>Expiration</b>: kies de langste termijn, of geen einddatum.</li>' +
       '<li>Bij <b>Repository access</b>: kies <b>Only select repositories</b> en dan alleen <code>ais-nieuws</code>. Niet <i>All repositories</i>.</li>' +
       '<li>Bij <b>Permissions → Repository permissions</b>: zet <b>Contents</b> op <b>Read and write</b>. De rest laat je zoals het is.</li>' +
-      '<li>Klik op <b>Generate token</b>, kopieer de code (begint met <code>github_pat_</code>) en plak hem hieronder.</li></ol>' +
-      '<div class="rij2"><input id="n-token" type="password" autocomplete="off" placeholder="github_pat_…" aria-label="GitHub-sleutel"><button class="knop" type="button" id="n-koppel">Koppelen</button></div>' +
-      '<p class="ne-hint" style="margin-top:10px">De sleutel wordt versleuteld met je dashboardwachtwoord en alleen op dit toestel bewaard. Op je iPhone doe je dit één keer opnieuw.</p></div>';
-    $('n-koppel').onclick = async function () {
+      '<li>Klik op <b>Generate token</b>, kopieer de code (begint met <code>github_pat_</code>) en plak hem hierboven.</li>' +
+      '<li>Let op: een nieuwe sleutel maken (of de oude vernieuwen) betekent dat je je andere toestellen ook opnieuw koppelt. Met de bewaarde sleutel is dat één tik.</li></ol></details></div>';
+    $('n-koppelform').onsubmit = function (e) { e.preventDefault(); $('n-koppel').click(); };
+    $('n-koppel').onclick = async function (e) {
+      if (e) e.preventDefault();
       var t = $('n-token').value.trim(), k = this;
       if (!/^(github_pat_|ghp_)[A-Za-z0-9_]{20,}$/.test(t)) { ctx.toast('Dat lijkt geen GitHub-sleutel. Hij begint met github_pat_.'); return; }
       k.textContent = 'Controleren…'; k.disabled = true;
