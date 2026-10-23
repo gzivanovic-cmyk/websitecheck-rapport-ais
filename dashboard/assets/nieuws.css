@@ -54,6 +54,8 @@
 .ne-hint.let { color: #8A5A00; }
 .ne-twee { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .ne-kort { display: grid; gap: 6px; }
+.ne-meer { margin-top: 6px; border: 0; background: none; padding: 2px 0; color: var(--navy); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+.ne-meer:hover { text-decoration: underline; }
 .ne-beeld { display: grid; grid-template-columns: 160px minmax(0, 1fr); gap: 14px; align-items: start; }
 .ne-beeld-vb { aspect-ratio: 16 / 10; border-radius: 12px; background: var(--soft) center / cover no-repeat; border: 1px dashed var(--line); display: grid; place-items: center; color: var(--muted); font-size: 12px; text-align: center; padding: 6px; }
 .ne-beeld-knoppen { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
@@ -202,3 +204,5 @@
 .n-toestel ol { margin: 6px 0 12px 20px; display: grid; gap: 8px; font-size: 14.5px; color: var(--ink-2); }
 .n-kopknoppen { display: flex; gap: 8px; flex-wrap: wrap; }
 .n-kopknoppen .knop.licht { background: #fff; border: 1px solid var(--line); }
+/* gele notitie voor AIS ({{check: ...}}), zoals op de conceptsite */
+.ne-wysiwyg mark.check, .vb-lijf mark.check { background: #fff1a8; color: inherit; padding: 0 4px; border-radius: 4px; font-size: .92em; }

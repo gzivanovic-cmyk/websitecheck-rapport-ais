@@ -63,6 +63,7 @@ window.AISNieuws = (function () {
       var extern = /^https?:/.test(u) && u.indexOf('ais-groep.nl') === -1;
       return '<a class="link" href="' + esc(u) + '"' + (extern ? ' target="_blank" rel="noopener"' : '') + '>' + tekst + '</a>';
     });
+    t = t.replace(/\{\{check:\s*(.+?)\}\}/g, '<mark class="check">$1</mark>');   // notitie voor AIS, niet voor bezoekers
     t = t.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
     t = t.replace(/(^|[^*\w])\*(?!\s)(.+?)(?<!\s)\*(?!\*)/g, '$1<em>$2</em>');
     return t;
@@ -458,8 +459,8 @@ window.AISNieuws = (function () {
     return { id: p.year + '-' + p.month + '-' + p.day + '-' + Math.random().toString(36).slice(2, 6), titel: '', slug: '', samenvatting: '', kort: ['', '', ''], rubriek: RUBRIEKEN[0],
       auteur: 'AIS-Groep', beeld: '', beeldAlt: '', deelbeeld: '', deelStijl: 'foto', tekst: '', seoTitel: '', seoBeschrijving: '', status: 'concept', publicatie: null, oudeSlugs: [], aangemaakt: nuIso(), gewijzigd: nuIso() };
   }
-  var VELDEN = ['id', 'titel', 'slug', 'samenvatting', 'kort', 'rubriek', 'auteur', 'beeld', 'beeldAlt', 'deelbeeld', 'deelStijl', 'tekst', 'seoTitel', 'seoBeschrijving', 'status', 'publicatie', 'oudeSlugs', 'aangemaakt', 'gewijzigd'];
-  function schoon(b) { var o = {}; VELDEN.forEach(function (k) { o[k] = b[k] === undefined ? null : b[k]; }); o.kort = (b.kort || []).slice(0, 3); while (o.kort.length < 3) o.kort.push(''); o.oudeSlugs = b.oudeSlugs || []; return o; }
+  var VELDEN = ['id', 'titel', 'slug', 'samenvatting', 'kort', 'rubriek', 'auteur', 'beeld', 'beeldAlt', 'deelbeeld', 'deelStijl', 'tekst', 'seoTitel', 'seoBeschrijving', 'status', 'publicatie', 'oudeSlugs', 'aangemaakt', 'gewijzigd', 'extra'];
+  function schoon(b) { var o = {}; VELDEN.forEach(function (k) { o[k] = b[k] === undefined ? null : b[k]; }); o.kort = (b.kort || []).slice(0, 5); while (o.kort.length < 3) o.kort.push(''); o.oudeSlugs = b.oudeSlugs || []; return o; }
   function gewijzigd() { return ed && JSON.stringify(schoon(ed.b)) !== ed.orig; }
   var KLAD = function (id) { return 'ais-nieuws-klad-' + id; };
 
@@ -516,8 +517,8 @@ window.AISNieuws = (function () {
           '<div class="ne-veld"><span class="ne-label">Omslagfoto <small>' + FOTOMAAT.toLowerCase() + ', onderwerp in het midden</small></span><div class="ne-beeld"><div class="ne-beeld-vb" id="ne-beeldvb">' + leegVak('Nog geen foto') + '</div><div>' +
             '<div class="ne-beeld-knoppen"><label class="knop licht" style="cursor:pointer">Foto kiezen<input type="file" id="ne-bestand" accept="image/*" hidden></label>' + (b.beeld ? '<button class="knop licht" type="button" id="ne-geenbeeld">Weghalen</button>' : '') + '</div>' +
             '<input id="ne-alt" data-v="beeldAlt" value="' + esc(b.beeldAlt) + '" placeholder="Wat staat er op de foto? (voor Google en schermlezers)" aria-label="Beschrijving van de foto"></div></div></div>' +
-          '<div class="ne-veld"><span class="ne-label">In het kort <small>optioneel, max. 3 punten bovenaan het artikel</small></span><div class="ne-kort">' +
-            [0, 1, 2].map(function (i) { return '<input data-kort="' + i + '" value="' + esc(b.kort[i]) + '" placeholder="Punt ' + (i + 1) + '" aria-label="In het kort, punt ' + (i + 1) + '">'; }).join('') + '</div></div>' +
+          '<div class="ne-veld"><span class="ne-label">In het kort <small>optioneel, 3 tot 5 punten bovenaan het artikel</small></span><div class="ne-kort" id="ne-kort">' +
+            b.kort.map(function (k, i) { return kortVeld(i, k); }).join('') + '</div>' + (b.kort.length < 5 ? '<button type="button" class="ne-meer" id="ne-kortmeer">+ Punt erbij</button>' : '') + '</div>' +
           '<div class="ne-veld"><span class="ne-label"><span>Tekst</span><small id="ne-woorden"></small></span>' +
             '<div class="ne-gereedschap" role="toolbar" aria-label="Opmaak">' + [['h2', 'Tussenkop', 'Tussenkop'], ['h3', 'Kleine kop', 'Kleine kop'], ['vet', '<b>B</b>', 'Vet (⌘B)'], ['schuin', '<em>I</em>', 'Schuin (⌘I)'],
               ['link', 'Link', 'Link (⌘K)'], ['lijst', '• Lijst', 'Opsomming'], ['nummer', '1. Lijst', 'Genummerde lijst'], ['citaat', '“ Citaat', 'Citaat']]
@@ -541,6 +542,9 @@ window.AISNieuws = (function () {
     koppelEditor(); werkBij(); tekenPub(); tekenOverig(); toonBeeld(); if (ed.voorbeeld) tekenVoorbeeld();
   }
 
+  function kortVeld(i, v) { return '<input data-kort="' + i + '" value="' + esc(v) + '" placeholder="Punt ' + (i + 1) + '" aria-label="In het kort, punt ' + (i + 1) + '">'; }
+  function koppelKort(v) { v.addEventListener('input', function () { ed.b.kort[+v.dataset.kort] = v.value; werkBij(); }); }
+
   function koppelEditor() {
     var el = $('neditor');
     el.querySelectorAll('[data-v]').forEach(function (v) {
@@ -552,7 +556,11 @@ window.AISNieuws = (function () {
       });
     });
     $('ne-slug').addEventListener('blur', function () { ed.b.slug = maakSlug(this.value); this.value = ed.b.slug; werkBij(); });
-    el.querySelectorAll('[data-kort]').forEach(function (v) { v.addEventListener('input', function () { ed.b.kort[+v.dataset.kort] = v.value; werkBij(); }); });
+    el.querySelectorAll('[data-kort]').forEach(koppelKort);
+    if ($('ne-kortmeer')) $('ne-kortmeer').onclick = function () {
+      ed.b.kort.push(''); $('ne-kort').insertAdjacentHTML('beforeend', kortVeld(ed.b.kort.length - 1, ''));
+      var v = $('ne-kort').lastElementChild; koppelKort(v); v.focus(); if (ed.b.kort.length >= 5) this.remove();
+    };
     $('ne-sluit').onclick = sluitEditor;
     $('ne-opslaan').onclick = function () { opslaan(null); };
     $('ne-vb').onclick = function () { ed.voorbeeld = !ed.voorbeeld; $('ne-velden').hidden = ed.voorbeeld; $('ne-voorbeeld').hidden = !ed.voorbeeld; this.textContent = ed.voorbeeld ? 'Bewerken' : 'Voorbeeld'; if (ed.voorbeeld) tekenVoorbeeld(); window.scrollTo(0, 0); $('neditor').scrollTop = 0; };
@@ -602,6 +610,7 @@ window.AISNieuws = (function () {
         var vet = ((t === 'B' || t === 'STRONG') && !/normal|[1-4]00/.test(c.style.fontWeight)) || (t === 'SPAN' && /bold|[6-9]00/.test(c.style.fontWeight));   // Google Docs: <b style="font-weight:normal"> is niet vet
         if (t === 'BR') uit += ' ';
         else if (t === 'UL' || t === 'OL') { /* een lijst in een lijst: die punten komen apart mee */ }
+        else if (t === 'MARK' && binnen.trim()) uit += '{{check: ' + binnen.trim() + '}}';
         else if (vet && binnen.trim()) uit += vast(binnen, '**');
         else if ((t === 'I' || t === 'EM' || (t === 'SPAN' && c.style.fontStyle === 'italic')) && binnen.trim()) uit += vast(binnen, '*');
         else if (t === 'A' && c.getAttribute('href') && binnen.trim()) uit += '[' + binnen.trim() + '](' + netteLink(c.getAttribute('href')) + ')';
@@ -680,7 +689,7 @@ window.AISNieuws = (function () {
       var el = $(x[0]); if (!el) return; var max = +el.dataset.max, n = (x[1] || '').length;
       el.textContent = n + ' / ' + max; el.classList.toggle('te-lang', n > max);
     });
-    $('ne-woorden').textContent = woorden(b.tekst) + ' woorden · ' + Math.max(1, Math.round(woorden(b.tekst) / 200)) + ' min lezen';
+    $('ne-woorden').textContent = woorden(b.tekst) + ' woorden · ' + Math.max(1, Math.ceil(woorden(b.tekst) / 200)) + ' min lezen';
     // webadres: uniek, en waarschuwen als een gepubliceerd bericht van adres verandert
     var dubbel = VASTE_ADRESSEN.indexOf(b.slug) !== -1 || berichten.some(function (x) { return x.id !== b.id && x.status !== 'prullenbak' && x.slug === b.slug; });
     var origSlug = JSON.parse(ed.orig).slug, live = soort(JSON.parse(ed.orig)) === 'gepubliceerd';
@@ -882,9 +891,9 @@ window.AISNieuws = (function () {
     var b = ed.b, r = md(b.tekst), kort = (b.kort || []).filter(function (k) { return k.trim(); });
     var auteur = (b.auteur || 'AIS-Groep').trim(), datum = new Date(b.publicatie && soort(b) !== 'concept' ? b.publicatie : ed.wanneer === 'later' ? isoUit(ed.datum, ed.tijd) : ed.wanneer === 'rij' ? (achteraan() || Date.now()) : Date.now());
     $('ne-voorbeeld').innerHTML = '<div class="vb"><div class="vb-hero"><div><span class="vb-eyebrow">' + esc(b.rubriek || 'Nieuws') + '</span><h1>' + esc(b.titel || 'Titel van het bericht') + '</h1>' +
-      '<div class="vb-auteur"><span class="vb-av">' + esc(initialen(auteur)) + '</span><span><b>' + esc(auteur) + '</b>AIS-Groep · ' + datum.toLocaleDateString('nl-NL', { timeZone: TZ, day: 'numeric', month: 'long', year: 'numeric' }) + ' · ' + Math.max(1, Math.round(woorden(b.tekst) / 200)) + ' min lezen</span></div></div>' +
+      '<div class="vb-auteur"><span class="vb-av">' + esc(initialen(auteur)) + '</span><span><b>' + esc(auteur) + '</b>AIS-Groep · ' + datum.toLocaleDateString('nl-NL', { timeZone: TZ, day: 'numeric', month: 'long', year: 'numeric' }) + ' · ' + Math.max(1, Math.ceil(woorden(b.tekst) / 200)) + ' min lezen</span></div></div>' +
       (b.beeld ? '<img id="vb-beeld" alt="' + esc(b.beeldAlt) + '">' : '') + '</div>' +
-      '<div class="vb-lijf">' + (kort.length ? '<div class="vb-kort"><b>In het kort</b><ul>' + kort.map(function (k) { return '<li>' + inline(k) + '</li>'; }).join('') + '</ul></div>' : '') + (r.html || '<p style="color:var(--muted)">Nog geen tekst.</p>') + '</div></div>' +
+      '<div class="vb-lijf">' + (kort.length ? '<div class="vb-kort"><b>' + esc((b.extra && b.extra.kortKop) || 'In het kort') + '</b><ul>' + kort.map(function (k) { return '<li>' + inline(k) + '</li>'; }).join('') + '</ul></div>' : '') + (r.html || '<p style="color:var(--muted)">Nog geen tekst.</p>') + '</div></div>' +
       '<p class="ne-hint" style="margin-top:10px">Zo ongeveer ziet het bericht eruit op ais-groep.nl. Op de site staan ernaast nog de inhoudsopgave en de knop Plan een demo.</p>';
     if (b.beeld) beeld(b.beeld).then(function (u) { var i = $('vb-beeld'); if (!i) return; if (u) i.src = u; else i.remove(); }).catch(function () { if ($('vb-beeld')) $('vb-beeld').remove(); });
     $('ne-voorbeeld').querySelectorAll('a').forEach(function (a) { a.addEventListener('click', function (e) { e.preventDefault(); }); });
